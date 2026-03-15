@@ -17,9 +17,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.bmstu.iu3.automanagement.R.font.game_font
 import com.bmstu.iu3.automanagement.models.MainViewModel
 import com.bmstu.iu3.automanagement.ui.navigation.SetupNavGraph
 
@@ -43,7 +46,7 @@ class MainActivity : ComponentActivity() {
                         containerColor = MaterialTheme.colorScheme.surface,
                         topBar = {
                             TopAppBar(
-                                title = { Text("Formula Manager") },
+                                title = { Text("Auto Management", fontFamily = FontFamily(Font(game_font))) },
                                 actions = {
                                     Text(
                                         text = budgetText,

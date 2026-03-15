@@ -22,7 +22,7 @@ sealed class Component {
 class Engine : Component() {
     private var power: Int = 0
     private var weight: Int = 0
-    private var type: String = "" // e.g. "V6"
+    private var type: String = ""
 
     fun getPower(): Int = power
     fun setPower(value: Int) { power = value }
@@ -44,11 +44,20 @@ class Gearbox : Component() {
 
 class Chassis : Component() {
     private var maxEngineWeight: Int = 0
+    private var suspensionType: String = "" // Required suspension type
+
     fun getMaxEngineWeight(): Int = maxEngineWeight
     fun setMaxEngineWeight(value: Int) { maxEngineWeight = value }
+    fun getSuspensionType(): String = suspensionType
+    fun setSuspensionType(value: String) { suspensionType = value }
 }
 
-class Suspension : Component()
+class Suspension : Component() {
+    private var type: String = "" // e.g. "Double Wishbone", "Multi-link"
+    fun getType(): String = type
+    fun setType(value: String) { type = value }
+}
+
 class Aerodynamics : Component()
 class Tyres : Component() {
     private var grip: Double = 0.0

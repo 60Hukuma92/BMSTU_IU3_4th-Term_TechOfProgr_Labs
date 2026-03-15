@@ -11,19 +11,19 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.MarketViewModel
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BuyComponentsScreen(onBack: () -> Unit) {
-    val marketViewModel: MarketViewModel = viewModel()
-    val components = marketViewModel.availableComponents
+fun HirePilotsScreen(onBack: () -> Unit) {
+    val viewModel: MarketViewModel = viewModel()
+    val pilots = viewModel.availablePilots
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Buy Components", fontFamily = FontFamily(Font(press_start2p))) })
+            TopAppBar(title = { Text("Hire Pilots", fontFamily = FontFamily(Font(press_start2p))) })
         }
     ) { padding ->
         Column(
@@ -34,7 +34,7 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(components) { component ->
+                items(pilots) { pilot ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
@@ -43,12 +43,14 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = component.getName(), style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily(Font(press_start2p)))
-                                Text(text = "${component.getPrice()} $", style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily(Font(press_start2p)))
+                                Text(text = pilot.getName(), style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily(Font(press_start2p)))
+                                Text(text = "Skill: ${pilot.getSkill()}", style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily(Font(press_start2p)))
+                                Text(text = "Salary: ${pilot.getSalary()} $", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily(Font(press_start2p)))
                             }
-                            Button(onClick = { marketViewModel.buyComponent(component) }) {
-                                Text("Buy", fontFamily = FontFamily(Font(press_start2p)))
-                            }
+                            PixelButton(
+                                text = "Hire",
+                                onClick = { viewModel.hirePilot(pilot) }
+                            )
                         }
                     }
                 }
@@ -56,9 +58,11 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Back to Menu", fontFamily = FontFamily(Font(press_start2p)))
-            }
+            PixelButton(
+                text = "Back to Menu",
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

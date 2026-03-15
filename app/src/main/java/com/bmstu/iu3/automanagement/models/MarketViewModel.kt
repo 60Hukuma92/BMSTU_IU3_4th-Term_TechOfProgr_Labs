@@ -1,33 +1,31 @@
 package com.bmstu.iu3.automanagement.models
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.widget.Toast
+import androidx.lifecycle.AndroidViewModel
 import com.bmstu.iu3.automanagement.data.GameState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
-class MarketViewModel : ViewModel() {
-    private val _availableComponents = MutableStateFlow<List<Component>>(
-        listOf(
-            Engine().apply {
-                setName("V6 Basic")
-                setPrice(2000.0)
-                setPower(500)
-                setType("V6")
-            },
-            Engine().apply {
-                setName("V8 Sport")
-                setPrice(5000.0)
-                setPower(750)
-                setType("V8")
-            }
-        )
-    )
-    val availableComponents: StateFlow<List<Component>> = _availableComponents.asStateFlow()
+class MarketViewModel(application: Application) : AndroidViewModel(application) {
+    val availableComponents: List<Component> = GameState.getMarketComponents()
+
+    val availableEngineers: List<Engineer> = GameState.getMarketEngineers()
+    val availablePilots: List<Pilot> = GameState.getMarketPilots()
 
     fun buyComponent(component: Component) {
-        if (GameState.spendMoney(component.getPrice())) {
-            // Logic to add to inventory would go here
+        if (!GameState.buyComponent(component)) {
+            Toast.makeText(getApplication(), "Cannot afford", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun hireEngineer(engineer: Engineer) {
+        if (!GameState.hireEngineer(engineer)) {
+            Toast.makeText(getApplication(), "Cannot afford", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun hirePilot(pilot: Pilot) {
+        if (!GameState.hirePilot(pilot)) {
+            Toast.makeText(getApplication(), "Cannot afford", Toast.LENGTH_SHORT).show()
         }
     }
 }

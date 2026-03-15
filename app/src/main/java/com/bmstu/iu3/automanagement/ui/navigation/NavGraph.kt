@@ -5,6 +5,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.bmstu.iu3.automanagement.ui.screens.BuyComponentsScreen
+import com.bmstu.iu3.automanagement.ui.screens.HireEngineersScreen
+import com.bmstu.iu3.automanagement.ui.screens.HirePilotsScreen
 import com.bmstu.iu3.automanagement.ui.screens.MainMenuScreen
 import com.bmstu.iu3.automanagement.ui.screens.PlaceholderScreen
 
@@ -29,17 +31,17 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
         composable(Screen.AssembleCar.route) {
             PlaceholderScreen(Screen.AssembleCar.title) { navController.popBackStack() }
         }
-        composable(Screen.HirePersonnel.route) {
-            PlaceholderScreen(Screen.HirePersonnel.title) { navController.popBackStack() }
+        composable(Screen.HireEngineers.route) {
+            HireEngineersScreen { navController.popBackStack() }
         }
-        composable(Screen.HirePilot.route) {
-            PlaceholderScreen(Screen.HirePilot.title) { navController.popBackStack() }
+        composable(Screen.HirePilots.route) {
+            HirePilotsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewCars.route) {
             PlaceholderScreen(Screen.ViewCars.title) { navController.popBackStack() }
         }
-        composable(Screen.ViewPilots.route) {
-            PlaceholderScreen(Screen.ViewPilots.title) { navController.popBackStack() }
+        composable(Screen.ViewPersonnel.route) {
+            PlaceholderScreen(Screen.ViewPersonnel.title) { navController.popBackStack() }
         }
         composable(Screen.ViewStats.route) {
             PlaceholderScreen(Screen.ViewStats.title) { navController.popBackStack() }

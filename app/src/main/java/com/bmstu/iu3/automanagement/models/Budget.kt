@@ -1,6 +1,7 @@
 package com.bmstu.iu3.automanagement.models
 
 import com.bmstu.iu3.automanagement.utils.START_BUDGET
+import java.util.Locale
 
 class Budget {
     private var amount: Double = START_BUDGET
@@ -8,5 +9,5 @@ class Budget {
     fun getAmount(): Double = amount
     fun setAmount(value: Double) { amount = value }
     fun subtract(value: Double) { amount -= value }
-    override fun toString(): String = "Budget: %.2f$amount"
+    override fun toString(): String = String.format(Locale.US, "%.2f $", amount)
 }
