@@ -10,6 +10,7 @@ import com.bmstu.iu3.automanagement.ui.screens.HireEngineersScreen
 import com.bmstu.iu3.automanagement.ui.screens.HirePilotsScreen
 import com.bmstu.iu3.automanagement.ui.screens.MainMenuScreen
 import com.bmstu.iu3.automanagement.ui.screens.PlaceholderScreen
+import com.bmstu.iu3.automanagement.ui.screens.ViewCarsScreen
 import com.bmstu.iu3.automanagement.ui.screens.ViewPersonnelScreen
 
 @Composable
@@ -40,7 +41,7 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
             HirePilotsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewCars.route) {
-            PlaceholderScreen(Screen.ViewCars.title) { navController.popBackStack() }
+           ViewCarsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewPersonnel.route) {
             ViewPersonnelScreen { navController.popBackStack() }

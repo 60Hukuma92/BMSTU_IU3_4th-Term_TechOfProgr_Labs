@@ -46,6 +46,7 @@ object GameState {
     fun getHiredPilots(): List<Pilot> = hiredPilots
 
     fun addCar(car: Car) { assembledCars.add(car) }
+    fun addComponent(component: Component) { ownedComponents.add(component) }
     fun removeComponentFromInventory(component: Component) { ownedComponents.remove(component) }
 
     fun setBudget(amount: Double) {
