@@ -6,7 +6,7 @@ sealed class Screen(val route: String, val title: String) {
     object BuyComponents : Screen("buy_components", "Buy Components")
     object AssembleCar : Screen("assemble_car", "Assemble Car")
     object HireEngineers : Screen("hire_engineers", "Hire Engineers")
-    object HirePilots : Screen("hire_pilots", "Hire Pilot")
+    object HirePilots : Screen("hire_pilots", "Hire Pilots")
     object ViewCars : Screen("view_cars", "View Cars")
     object ViewPersonnel : Screen("view_personnel", "View Personnel")
     object ViewStats : Screen("view_stats", "Race Statistics")

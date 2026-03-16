@@ -1,10 +1,9 @@
 package com.bmstu.iu3.automanagement.models
 
-import com.bmstu.iu3.automanagement.utils.START_BUDGET
 import java.util.Locale
 
 class Budget {
-    private var amount: Double = START_BUDGET
+    private var amount: Double = 0.0
 
     fun getAmount(): Double = amount
     fun setAmount(value: Double) { amount = value }

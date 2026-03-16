@@ -4,17 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import com.bmstu.iu3.automanagement.ui.theme.AutoManagementTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.Font
@@ -25,6 +19,8 @@ import androidx.navigation.compose.rememberNavController
 import com.bmstu.iu3.automanagement.R.font.game_font
 import com.bmstu.iu3.automanagement.models.MainViewModel
 import com.bmstu.iu3.automanagement.ui.navigation.SetupNavGraph
+import com.bmstu.iu3.automanagement.ui.theme.AutoManagementTheme
+import com.bmstu.iu3.automanagement.utils.DevMenuDialog
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +30,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mainViewModel: MainViewModel = viewModel()
             val budgetText = mainViewModel.getBudgetDisplay()
+            
+            var showDevMenu by remember { mutableStateOf(false) }
 
             AutoManagementTheme {
                 Surface(
@@ -48,6 +46,14 @@ class MainActivity : ComponentActivity() {
                             TopAppBar(
                                 title = { Text("Auto Management", fontFamily = FontFamily(Font(game_font))) },
                                 actions = {
+                                    IconButton(onClick = { showDevMenu = true }) {
+                                        Icon(
+                                            Icons.Default.Build, 
+                                            contentDescription = "Dev Menu", 
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                    
                                     Text(
                                         text = budgetText,
                                         modifier = Modifier.padding(end = 16.dp),
@@ -68,6 +74,10 @@ class MainActivity : ComponentActivity() {
                                 onExit = { finish() }
                             )
                         }
+                    }
+
+                    if (showDevMenu) {
+                        DevMenuDialog(onDismiss = { showDevMenu = false })
                     }
                 }
             }

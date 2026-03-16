@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.MarketViewModel
+import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,10 +56,12 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Back to Menu", fontFamily = FontFamily(Font(press_start2p)))
-            }
+
+            PixelButton(
+                text = "Back to Menu",
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

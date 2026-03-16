@@ -34,7 +34,7 @@ class Engine : Component() {
 
 class Gearbox : Component() {
     private var gears: Int = 0
-    private var type: String = "" // Must match Engine type
+    private var type: String = ""
 
     fun getGears(): Int = gears
     fun setGears(value: Int) { gears = value }
@@ -44,7 +44,7 @@ class Gearbox : Component() {
 
 class Chassis : Component() {
     private var maxEngineWeight: Int = 0
-    private var suspensionType: String = "" // Required suspension type
+    private var suspensionType: String = ""
 
     fun getMaxEngineWeight(): Int = maxEngineWeight
     fun setMaxEngineWeight(value: Int) { maxEngineWeight = value }
@@ -53,12 +53,13 @@ class Chassis : Component() {
 }
 
 class Suspension : Component() {
-    private var type: String = "" // e.g. "Double Wishbone", "Multi-link"
+    private var type: String = ""
     fun getType(): String = type
     fun setType(value: String) { type = value }
 }
 
 class Aerodynamics : Component()
+
 class Tyres : Component() {
     private var grip: Double = 0.0
     fun getGrip(): Double = grip
