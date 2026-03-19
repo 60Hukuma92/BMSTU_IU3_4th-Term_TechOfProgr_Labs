@@ -67,7 +67,8 @@ object GameState {
     }
 
     fun buyComponent(component: Component): Boolean {
-        if (spendMoney(component.getPrice())) {
+        // Проверяем наличие компонента на рынке перед покупкой
+        if (marketComponents.contains(component) && spendMoney(component.getPrice())) {
             marketComponents.remove(component)
             ownedComponents.add(component)
             return true
@@ -76,7 +77,7 @@ object GameState {
     }
 
     fun hireEngineer(engineer: Engineer): Boolean {
-        if (spendMoney(engineer.getSalary())) {
+        if (marketEngineers.contains(engineer) && spendMoney(engineer.getSalary())) {
             marketEngineers.remove(engineer)
             hiredEngineers.add(engineer)
             return true
@@ -85,7 +86,7 @@ object GameState {
     }
 
     fun hirePilot(pilot: Pilot): Boolean {
-        if (spendMoney(pilot.getSalary())) {
+        if (marketPilots.contains(pilot) && spendMoney(pilot.getSalary())) {
             marketPilots.remove(pilot)
             hiredPilots.add(pilot)
             return true
