@@ -32,6 +32,20 @@ fun PixelButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    
+    // Вычисляем цвет при нажатии (делаем темнее)
+    val buttonColor = if (isPressed) {
+        // Уменьшаем яркость каждого канала для эффекта затемнения
+        Color(
+            red = (baseColor.red * 0.7f),
+            green = (baseColor.green * 0.7f),
+            blue = (baseColor.blue * 0.7f),
+            alpha = baseColor.alpha
+        )
+    } else {
+        baseColor
+    }
+
     val darkShadow = Color.Black.copy(alpha = 0.3f)
     val offset = if (isPressed) 2.dp else 0.dp
 
@@ -40,7 +54,7 @@ fun PixelButton(
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .background(Color.Black)
             .padding(2.dp)
-            .background(baseColor)
+            .background(buttonColor)
             .drawBehind {
                 if (!isPressed) {
                     drawRect(color = Color.White.copy(0.5f), size = size.copy(height = 2.dp.toPx()))

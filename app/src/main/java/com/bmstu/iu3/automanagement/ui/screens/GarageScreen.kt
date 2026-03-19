@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -108,9 +109,11 @@ fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
 
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.weight(1f))
+            // Back button - gray
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.weight(1f), baseColor = Color.Gray)
             Spacer(modifier = Modifier.width(8.dp))
-            PixelButton(text = "ASSEMBLE", onClick = { viewModel.assemble() }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.tertiary)
+            // Assemble button - blue
+            PixelButton(text = "ASSEMBLE", onClick = { viewModel.assemble() }, modifier = Modifier.weight(1f), baseColor = Color(0xFF2196F3))
         }
     }
 }
@@ -190,6 +193,7 @@ fun WorkshopContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth())
+        // Back button - gray
+        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
     }
 }

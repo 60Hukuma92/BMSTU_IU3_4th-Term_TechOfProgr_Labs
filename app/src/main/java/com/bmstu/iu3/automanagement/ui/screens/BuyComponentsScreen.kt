@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,6 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
     val tabs = listOf("ENGINES", "GEARBOX", "CHASSIS", "SUSP", "AERO", "TYRES")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    // Убрали remember, чтобы список обновлялся при переключении вкладок и при покупке (удалении из списка)
     val filteredComponents = when (selectedTabIndex) {
         0 -> allComponents.filterIsInstance<Engine>()
         1 -> allComponents.filterIsInstance<Gearbox>()
@@ -93,7 +93,7 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth())
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
         }
     }
 }
