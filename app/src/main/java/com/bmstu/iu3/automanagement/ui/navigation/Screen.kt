@@ -11,5 +11,5 @@ sealed class Screen(val route: String, val title: String) {
     object ViewPersonnel : Screen("view_personnel", "View Personnel")
     object ViewStats : Screen("view_stats", "Race Statistics")
     object ViewTeams : Screen("view_teams", "Championship")
-    object ViewOtherResults : Screen("view_results", "Other Results")
+    object ViewResults : Screen("view_results", "Championship Results")
 }

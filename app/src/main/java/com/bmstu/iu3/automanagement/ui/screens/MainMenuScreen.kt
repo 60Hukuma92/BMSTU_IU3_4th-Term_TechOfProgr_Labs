@@ -26,7 +26,7 @@ fun MainMenuScreen(onNavigate: (String) -> Unit, onExit: () -> Unit) {
         Screen.ViewPersonnel,
         Screen.ViewStats,
         Screen.ViewTeams,
-        Screen.ViewOtherResults
+        Screen.ViewResults
     )
 
     Column(

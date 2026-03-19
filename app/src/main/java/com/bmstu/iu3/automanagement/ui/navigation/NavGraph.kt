@@ -19,7 +19,14 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
             )
         }
         composable(Screen.StartRace.route) {
-            PlaceholderScreen(Screen.StartRace.title) { navController.popBackStack() }
+            StartRaceScreen(
+                onBack = { navController.popBackStack() },
+                onRaceComplete = {
+                    navController.navigate(Screen.ViewResults.route) {
+                        popUpTo(Screen.MainMenu.route)
+                    }
+                }
+            )
         }
         composable(Screen.BuyComponents.route) {
             BuyComponentsScreen { navController.popBackStack() }
@@ -40,13 +47,13 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
             ViewPersonnelScreen { navController.popBackStack() }
         }
         composable(Screen.ViewStats.route) {
-            PlaceholderScreen(Screen.ViewStats.title) { navController.popBackStack() }
+            ViewStatsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewTeams.route) {
             ViewTeamsScreen { navController.popBackStack() }
         }
-        composable(Screen.ViewOtherResults.route) {
-            PlaceholderScreen(Screen.ViewOtherResults.title) { navController.popBackStack() }
+        composable(Screen.ViewResults.route) {
+            ViewResultsScreen { navController.popBackStack() }
         }
     }
 }

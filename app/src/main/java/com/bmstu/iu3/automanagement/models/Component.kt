@@ -6,6 +6,7 @@ sealed class Component {
     private var price: Double = 0.0
     private var wear: Double = 0.0
     private var performance: Double = 0.0
+    private var isDestroyed: Boolean = false
 
     fun getId(): String = id
     fun setId(value: String) { id = value }
@@ -17,6 +18,8 @@ sealed class Component {
     fun setWear(value: Double) { wear = value }
     fun getPerformance(): Double = performance
     fun setPerformance(value: Double) { performance = value }
+    fun isDestroyed(): Boolean = isDestroyed
+    fun setDestroyed(value: Boolean) { isDestroyed = value }
 }
 
 class Engine : Component() {
