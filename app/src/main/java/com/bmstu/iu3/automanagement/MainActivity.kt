@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.bmstu.iu3.automanagement.R.font.game_font
+import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.MainViewModel
 import com.bmstu.iu3.automanagement.ui.navigation.SetupNavGraph
 import com.bmstu.iu3.automanagement.ui.theme.AutoManagementTheme
@@ -58,7 +59,8 @@ class MainActivity : ComponentActivity() {
                                         text = budgetText,
                                         modifier = Modifier.padding(end = 16.dp),
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontFamily = FontFamily(Font(press_start2p))
                                     )
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(

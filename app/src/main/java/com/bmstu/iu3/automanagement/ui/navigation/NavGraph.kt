@@ -4,14 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.bmstu.iu3.automanagement.ui.screens.AssembleCarScreen
-import com.bmstu.iu3.automanagement.ui.screens.BuyComponentsScreen
-import com.bmstu.iu3.automanagement.ui.screens.HireEngineersScreen
-import com.bmstu.iu3.automanagement.ui.screens.HirePilotsScreen
-import com.bmstu.iu3.automanagement.ui.screens.MainMenuScreen
-import com.bmstu.iu3.automanagement.ui.screens.PlaceholderScreen
-import com.bmstu.iu3.automanagement.ui.screens.ViewCarsScreen
-import com.bmstu.iu3.automanagement.ui.screens.ViewPersonnelScreen
+import com.bmstu.iu3.automanagement.ui.screens.*
 
 @Composable
 fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
@@ -31,7 +24,7 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
         composable(Screen.BuyComponents.route) {
             BuyComponentsScreen { navController.popBackStack() }
         }
-        composable(Screen.AssembleCar.route) {
+        composable(Screen.Garage.route) {
             AssembleCarScreen { navController.popBackStack() }
         }
         composable(Screen.HireEngineers.route) {
@@ -41,7 +34,7 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
             HirePilotsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewCars.route) {
-           ViewCarsScreen { navController.popBackStack() }
+            ViewCarsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewPersonnel.route) {
             ViewPersonnelScreen { navController.popBackStack() }

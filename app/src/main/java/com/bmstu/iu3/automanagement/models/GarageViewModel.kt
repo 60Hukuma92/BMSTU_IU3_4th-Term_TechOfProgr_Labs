@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import com.bmstu.iu3.automanagement.data.GameState
 
-class AssembleCarViewModel(application: Application) : AndroidViewModel(application) {
+class GarageViewModel(application: Application) : AndroidViewModel(application) {
 
     // Current Car draft
     var selectedEngine = mutableStateOf<Engine?>(null)
@@ -16,17 +16,36 @@ class AssembleCarViewModel(application: Application) : AndroidViewModel(applicat
     var selectedAero = mutableStateOf<Aerodynamics?>(null)
     var selectedTyres = mutableStateOf<Tyres?>(null)
 
+    var selectedEngineer = mutableStateOf<Engineer?>(null)
+
     val inventory: List<Component> = GameState.getOwnedComponents()
+    val hiredEngineers: List<Engineer> = GameState.getHiredEngineers()
 
     fun selectComponent(component: Component) {
         when (component) {
-            is Engine -> selectedEngine.value = component
-            is Gearbox -> selectedGearbox.value = component
-            is Chassis -> selectedChassis.value = component
-            is Suspension -> selectedSuspension.value = component
-            is Aerodynamics -> selectedAero.value = component
-            is Tyres -> selectedTyres.value = component
+            is Engine -> {
+                selectedEngine.value = if (selectedEngine.value == component) null else component
+            }
+            is Gearbox -> {
+                selectedGearbox.value = if (selectedGearbox.value == component) null else component
+            }
+            is Chassis -> {
+                selectedChassis.value = if (selectedChassis.value == component) null else component
+            }
+            is Suspension -> {
+                selectedSuspension.value = if (selectedSuspension.value == component) null else component
+            }
+            is Aerodynamics -> {
+                selectedAero.value = if (selectedAero.value == component) null else component
+            }
+            is Tyres -> {
+                selectedTyres.value = if (selectedTyres.value == component) null else component
+            }
         }
+    }
+    
+    fun selectEngineer(engineer: Engineer) {
+        selectedEngineer.value = if (selectedEngineer.value == engineer) null else engineer
     }
 
     fun assemble() {
@@ -36,9 +55,15 @@ class AssembleCarViewModel(application: Application) : AndroidViewModel(applicat
         val suspension = selectedSuspension.value
         val aerodynamics = selectedAero.value
         val tyres= selectedTyres.value
+        val engineer = selectedEngineer.value
 
         if (engine == null || gearbox == null || chassis == null || suspension == null || aerodynamics == null || tyres == null) {
             Toast.makeText(getApplication(), "Missing components", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        if (engineer == null) {
+            Toast.makeText(getApplication(), "Select an engineer to assemble the car", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -58,13 +83,16 @@ class AssembleCarViewModel(application: Application) : AndroidViewModel(applicat
         }
 
         val newCar = Car().apply {
-            setName("My Custom Formula")
+            setName("Formula - ${engineer.getName()}'s Build")
             setEngine(engine)
             setGearbox(gearbox)
             setChassis(chassis)
             setSuspension(suspension)
             setAerodynamics(aerodynamics)
             setTyres(tyres)
+            
+            val skillBonus = engineer.getSkill() / 100.0
+            setPerformance(getTotalPerformance() * (1.0 + skillBonus))
         }
 
         GameState.addCar(newCar)
@@ -78,7 +106,7 @@ class AssembleCarViewModel(application: Application) : AndroidViewModel(applicat
 
         clearSelection()
         
-        Toast.makeText(getApplication(), "Car Assembled!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(getApplication(), "Car Assembled by ${engineer.getName()}!", Toast.LENGTH_SHORT).show()
     }
 
     private fun clearSelection() {
@@ -88,5 +116,6 @@ class AssembleCarViewModel(application: Application) : AndroidViewModel(applicat
         selectedSuspension.value = null
         selectedAero.value = null
         selectedTyres.value = null
+        selectedEngineer.value = null
     }
 }

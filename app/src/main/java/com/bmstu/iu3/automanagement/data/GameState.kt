@@ -94,4 +94,28 @@ object GameState {
     }
 
     fun canAfford(price: Double): Boolean = budget.value.getAmount() >= price
+
+    fun repairComponent(component: Component, engineer: Engineer?): Boolean {
+        if (component.getWear() <= 0.0) return false
+        
+        // Base repair cost is 30% of original price multiplied by wear
+        var cost = component.getPrice() * 0.3 * component.getWear()
+        
+        // Engineer skill reduces cost (up to 50% discount at 100 skill)
+        engineer?.let {
+            val discount = it.getSkill() / 200.0
+            cost *= (1.0 - discount)
+        }
+
+        if (spendMoney(cost)) {
+            component.setWear(0.0)
+            // Need to refresh components list to trigger UI update
+            val index = ownedComponents.indexOf(component)
+            if (index != -1) {
+                ownedComponents[index] = component 
+            }
+            return true
+        }
+        return false
+    }
 }

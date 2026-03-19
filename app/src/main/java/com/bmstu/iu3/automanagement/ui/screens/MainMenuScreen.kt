@@ -19,7 +19,7 @@ fun MainMenuScreen(onNavigate: (String) -> Unit, onExit: () -> Unit) {
     val menuItems = listOf(
         Screen.StartRace,
         Screen.BuyComponents,
-        Screen.AssembleCar,
+        Screen.Garage,
         Screen.HireEngineers,
         Screen.HirePilots,
         Screen.ViewCars,

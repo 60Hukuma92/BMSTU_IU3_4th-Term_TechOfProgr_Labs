@@ -8,6 +8,7 @@ class Car {
     private var suspension: Suspension? = null
     private var aerodynamics: Aerodynamics? = null
     private var tyres: Tyres? = null
+    private var performance: Double = 0.0
 
     fun getName(): String = name
     fun setName(value: String) { name = value }
@@ -29,6 +30,9 @@ class Car {
 
     fun getTyres(): Tyres? = tyres
     fun setTyres(value: Tyres?) { tyres = value }
+    
+    fun getPerformance(): Double = performance
+    fun setPerformance(value: Double) { performance = value }
 
     fun isComplete(): Boolean {
         return engine != null && gearbox != null && chassis != null && 
