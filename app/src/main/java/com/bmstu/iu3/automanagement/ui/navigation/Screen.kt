@@ -10,6 +10,6 @@ sealed class Screen(val route: String, val title: String) {
     object ViewCars : Screen("view_cars", "View Cars")
     object ViewPersonnel : Screen("view_personnel", "View Personnel")
     object ViewStats : Screen("view_stats", "Race Statistics")
-    object ViewOtherTeams : Screen("view_teams", "Other Teams")
+    object ViewTeams : Screen("view_teams", "Championship")
     object ViewOtherResults : Screen("view_results", "Other Results")
 }

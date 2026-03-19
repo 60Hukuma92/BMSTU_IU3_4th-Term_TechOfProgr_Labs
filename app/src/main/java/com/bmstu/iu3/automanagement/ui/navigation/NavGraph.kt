@@ -42,8 +42,8 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
         composable(Screen.ViewStats.route) {
             PlaceholderScreen(Screen.ViewStats.title) { navController.popBackStack() }
         }
-        composable(Screen.ViewOtherTeams.route) {
-            PlaceholderScreen(Screen.ViewOtherTeams.title) { navController.popBackStack() }
+        composable(Screen.ViewTeams.route) {
+            ViewTeamsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewOtherResults.route) {
             PlaceholderScreen(Screen.ViewOtherResults.title) { navController.popBackStack() }

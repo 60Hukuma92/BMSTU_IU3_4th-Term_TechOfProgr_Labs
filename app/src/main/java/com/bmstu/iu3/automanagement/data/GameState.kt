@@ -4,6 +4,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.bmstu.iu3.automanagement.models.*
+import com.bmstu.iu3.automanagement.utils.MarketGenerator
+import com.bmstu.iu3.automanagement.utils.OpponentGenerator
 
 object GameState {
     private val budget: MutableState<Budget> = mutableStateOf(Budget())
@@ -12,38 +14,33 @@ object GameState {
     private val assembledCars = mutableStateListOf<Car>()
     private val hiredEngineers = mutableStateListOf<Engineer>()
     private val hiredPilots = mutableStateListOf<Pilot>()
+    private val opponentTeams = mutableStateListOf<OpponentTeam>()
 
     private val marketComponents = mutableStateListOf<Component>().apply {
-        add(Engine().apply { setName("V6 Eco"); setPrice(1500.0); setPower(450); setType("V6"); setPerformance(40.0) })
-        add(Engine().apply { setName("V8 Beast"); setPrice(5000.0); setPower(800); setType("V8"); setPerformance(85.0) })
-        add(Gearbox().apply { setName("6-Speed Manual"); setPrice(800.0); setType("V6"); setPerformance(30.0) })
-        add(Chassis().apply { setName("Steel Tube"); setPrice(1200.0); setMaxEngineWeight(200); setSuspensionType("Double Wishbone"); setPerformance(35.0) })
+        addAll(MarketGenerator.generateInitialMarket())
     }
 
     private val marketEngineers = mutableStateListOf<Engineer>().apply {
-        add(Engineer().apply { setName("Adrian Newey Jr."); setSkill(95); setSalary(5000.0) })
-        add(Engineer().apply { setName("James Allison"); setSkill(88); setSalary(4200.0) })
-        add(Engineer().apply { setName("Junior Tech"); setSkill(30); setSalary(1200.0) })
+        val (engineers, _) = MarketGenerator.generateStaff()
+        addAll(engineers)
     }
 
     private val marketPilots = mutableStateListOf<Pilot>().apply {
-        add(Pilot().apply { setName("Max Fast"); setSkill(92); setSalary(7000.0) })
-        add(Pilot().apply { setName("Lewis Slow"); setSkill(85); setSalary(6500.0) })
-        add(Pilot().apply { setName("Rookie Mike"); setSkill(45); setSalary(1500.0) })
+        val (_, pilots) = MarketGenerator.generateStaff()
+        addAll(pilots)
     }
 
-
     fun getBudgetObject() : Budget = budget.value
-
     fun getMarketComponents(): List<Component> = marketComponents
     fun getMarketEngineers(): List<Engineer> = marketEngineers
     fun getMarketPilots(): List<Pilot> = marketPilots
-
 
     fun getOwnedComponents(): List<Component> = ownedComponents
     fun getAssembledCars(): List<Car> = assembledCars
     fun getHiredEngineers(): List<Engineer> = hiredEngineers
     fun getHiredPilots(): List<Pilot> = hiredPilots
+
+    fun getOpponentTeams(): List<OpponentTeam> = opponentTeams
 
     fun addCar(car: Car) { assembledCars.add(car) }
     fun addComponent(component: Component) { ownedComponents.add(component) }
@@ -83,6 +80,17 @@ object GameState {
         return false
     }
 
+    // AI
+    fun aiTakeComponent(component: Component) { marketComponents.remove(component) }
+    fun aiTakeEngineer(engineer: Engineer) { marketEngineers.remove(engineer) }
+    fun aiTakePilot(pilot: Pilot) { marketPilots.remove(pilot) }
+
+    fun generateOpponents() {
+        if (opponentTeams.isEmpty()) {
+            opponentTeams.addAll(OpponentGenerator.generateOpponents(9))
+        }
+    }
+
     fun spendMoney(amount: Double): Boolean {
         if (canAfford(amount)) {
             val currentBudget = budget.value
@@ -97,23 +105,15 @@ object GameState {
 
     fun repairComponent(component: Component, engineer: Engineer?): Boolean {
         if (component.getWear() <= 0.0) return false
-        
-        // Base repair cost is 30% of original price multiplied by wear
         var cost = component.getPrice() * 0.3 * component.getWear()
-        
-        // Engineer skill reduces cost (up to 50% discount at 100 skill)
         engineer?.let {
             val discount = it.getSkill() / 200.0
             cost *= (1.0 - discount)
         }
-
         if (spendMoney(cost)) {
             component.setWear(0.0)
-            // Need to refresh components list to trigger UI update
             val index = ownedComponents.indexOf(component)
-            if (index != -1) {
-                ownedComponents[index] = component 
-            }
+            if (index != -1) { ownedComponents[index] = component }
             return true
         }
         return false
