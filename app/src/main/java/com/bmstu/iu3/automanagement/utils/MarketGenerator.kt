@@ -5,6 +5,24 @@ import kotlin.random.Random
 
 object MarketGenerator {
 
+    private val firstNames = listOf(
+        "Mario", "Sonic", "Crash", "Lara", "Geralt", "Kratos", "Nathan", "Gordon", "Snake", "Marcus",
+        "Neo", "John", "Tony", "Bruce", "Peter", "Clark", "Loki", "Gandalf", "Han", "Indiana",
+        "Homer", "Peter", "Rick", "Morty", "SpongeBob", "Shrek", "Bugs", "Scooby",
+        "Pit", "Bono", "DRS", "Pole", "Gearbox", "Rookie", "Safety", "Plan"
+    )
+
+    private val lastNames = listOf(
+        "Raikkonen", "Verstappen", "Hamilton", "Vettel", "Alonso", "Leclerc", "Norris", "Russell", "Gasly", "Ocon",
+        "Bottas", "Ricciardo", "Sainz", "Magnussen", "Hulkenberg", "Schumacher", "Stroll", "Tsunoda", "Albon", "Guanyu",
+        "Newey", "Horner", "Wolff", "Steiner", "Binotto", "Brown", "Seidl", "Vasseur",
+        "Skywalker", "Vader", "Stark", "Prime", "Shepard", "Ripley", "Freeman", "Doom", "Chief", "Kenobi",
+        "Byte", "Pixel", "Kernel", "Null", "Error", "Tesla", "Turing", "Cache",
+        "Pitstop", "Downforce", "Understeer", "Wall", "Gravel", "SafetyCar", "Penalty", "DriveThrough",
+        "GP2Engine", "Multi21", "Bwoah", "Hammertime", "CopyThat"
+    )
+
+
     fun generateInitialMarket(): List<Component> {
         val components = mutableListOf<Component>()
         repeat(30) { components.add(generateEngine()) }
@@ -64,17 +82,19 @@ object MarketGenerator {
         setPerformance(Random.nextDouble(50.0, 90.0))
     }
 
+    private fun generateRandomName(): String = "${firstNames.random()} ${lastNames.random()}"
+
     fun generateStaff(): Pair<List<Engineer>, List<Pilot>> {
         val engineers = List(30) {
             Engineer().apply {
-                setName(listOf("Eng", "Tech", "Prof").random() + "-" + Random.nextInt(1000))
+                setName(generateRandomName())
                 setSkill(Random.nextInt(20, 100))
                 setSalary(500.0 + (getSkill() * 50.0))
             }
         }
         val pilots = List(30) {
             Pilot().apply {
-                setName(listOf("Driver", "Racer", "Pro").random() + "-" + Random.nextInt(1000))
+                setName(generateRandomName())
                 setSkill(Random.nextInt(30, 100))
                 setSalary(1000.0 + (getSkill() * 50.0))
             }
