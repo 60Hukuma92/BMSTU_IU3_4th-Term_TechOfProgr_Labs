@@ -39,7 +39,6 @@ fun ViewTeamsScreen(onBack: () -> Unit) {
                 .padding(16.dp)
         ) {
             LazyColumn(modifier = Modifier.weight(1f)) {
-                // ВАША КОМАНДА (ИГРОК)
                 item {
                     Text("YOU:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
                     Card(
@@ -56,7 +55,6 @@ fun ViewTeamsScreen(onBack: () -> Unit) {
                     Text("COMPETITORS:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                 }
 
-                // КОМАНДЫ СОПЕРНИКОВ (9 ШТУК)
                 items(opponents) { team ->
                     Card(
                         modifier = Modifier
@@ -69,7 +67,7 @@ fun ViewTeamsScreen(onBack: () -> Unit) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Pilot: ${team.getPilot()?.getName() ?: "N/A"}", fontFamily = pixelFont, fontSize = 8.sp)
                             val perf = team.getCar()?.getPerformance() ?: 0.0
-                            Text("Power: ${String.format(Locale.US, "%.1f", perf)}", fontFamily = pixelFont, fontSize = 8.sp, color = MaterialTheme.colorScheme.tertiary)
+                            Text("Performance: ${String.format(Locale.US, "%.1f", perf)}", fontFamily = pixelFont, fontSize = 8.sp, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
                 }

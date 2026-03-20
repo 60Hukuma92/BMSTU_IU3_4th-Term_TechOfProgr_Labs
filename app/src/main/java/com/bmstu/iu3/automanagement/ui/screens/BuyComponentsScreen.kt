@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -27,16 +28,14 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
     val tabs = listOf("ENGINES", "GEARBOX", "CHASSIS", "SUSP", "AERO", "TYRES")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    val filteredComponents = remember(selectedTabIndex, allComponents) {
-        when (selectedTabIndex) {
-            0 -> allComponents.filterIsInstance<Engine>()
-            1 -> allComponents.filterIsInstance<Gearbox>()
-            2 -> allComponents.filterIsInstance<Chassis>()
-            3 -> allComponents.filterIsInstance<Suspension>()
-            4 -> allComponents.filterIsInstance<Aerodynamics>()
-            5 -> allComponents.filterIsInstance<Tyres>()
-            else -> allComponents
-        }
+    val filteredComponents = when (selectedTabIndex) {
+        0 -> allComponents.filterIsInstance<Engine>()
+        1 -> allComponents.filterIsInstance<Gearbox>()
+        2 -> allComponents.filterIsInstance<Chassis>()
+        3 -> allComponents.filterIsInstance<Suspension>()
+        4 -> allComponents.filterIsInstance<Aerodynamics>()
+        5 -> allComponents.filterIsInstance<Tyres>()
+        else -> allComponents
     }
 
     Scaffold(
@@ -73,7 +72,6 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(text = component.getName(), fontFamily = pixelFont, fontSize = 10.sp)
-                                    // ИСПРАВЛЕНО: Два знака после запятой
                                     Text(
                                         text = String.format(Locale.US, "%.2f $", component.getPrice()),
                                         fontFamily = pixelFont,
@@ -95,7 +93,7 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth())
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
         }
     }
 }
