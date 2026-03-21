@@ -62,7 +62,7 @@ fun AssembleCarScreen(onBack: () -> Unit) {
             if (selectedTabIndex == 0) {
                 AssembleContent(viewModel, inventory, engineers, onBack)
             } else {
-                WorkshopContent(viewModel, inventory, engineers, onBack)
+                WorkshopContent(viewModel, engineers, onBack)
             }
         }
     }
@@ -70,10 +70,11 @@ fun AssembleCarScreen(onBack: () -> Unit) {
 
 @Composable
 fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.automanagement.models.Component>, engineers: List<com.bmstu.iu3.automanagement.models.Engineer>, onBack: () -> Unit) {
+    val pixelFont = FontFamily(Font(press_start2p))
     Column {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Configuration:", style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily(Font(press_start2p)))
+                Text("Configuration:", style = MaterialTheme.typography.titleMedium, fontFamily = pixelFont)
                 Spacer(modifier = Modifier.height(8.dp))
                 SlotItem("Engine", viewModel.selectedEngine.value?.getName())
                 SlotItem("Gearbox", viewModel.selectedGearbox.value?.getName())
@@ -89,16 +90,16 @@ fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(modifier = Modifier.weight(1f)) {
-            item { Text("Engineer:", fontFamily = FontFamily(Font(press_start2p)), style = MaterialTheme.typography.bodySmall) }
+            item { Text("Select Lead Engineer:", fontFamily = pixelFont, style = MaterialTheme.typography.bodySmall) }
             items(engineers) { eng ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { viewModel.selectEngineer(eng) },
                     colors = CardDefaults.cardColors(containerColor = if (viewModel.selectedEngineer.value == eng) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Text("${eng.getName()} (Skill: ${eng.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
+                    Text("${eng.getName()} (Skill: ${eng.getSkill()})", modifier = Modifier.padding(12.dp), fontFamily = pixelFont, fontSize = 10.sp)
                 }
             }
-            item { Spacer(modifier = Modifier.height(16.dp)); Text("Components:", fontFamily = FontFamily(Font(press_start2p)), style = MaterialTheme.typography.bodySmall) }
+            item { Spacer(modifier = Modifier.height(16.dp)); Text("Select Components:", fontFamily = pixelFont, style = MaterialTheme.typography.bodySmall) }
             items(inventory) { component ->
                 val isSelected = component == viewModel.selectedEngine.value || component == viewModel.selectedGearbox.value ||
                                  component == viewModel.selectedChassis.value || component == viewModel.selectedSuspension.value ||
@@ -109,80 +110,79 @@ fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
 
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            // Back button - gray
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.weight(1f), baseColor = Color.Gray)
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.weight(1f))
             Spacer(modifier = Modifier.width(8.dp))
-            // Assemble button - blue
-            PixelButton(text = "ASSEMBLE", onClick = { viewModel.assemble() }, modifier = Modifier.weight(1f), baseColor = Color(0xFF2196F3))
+            PixelButton(text = "ASSEMBLE", onClick = { viewModel.assemble() }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.tertiary)
         }
     }
 }
 
 @Composable
-fun WorkshopContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.automanagement.models.Component>, engineers: List<com.bmstu.iu3.automanagement.models.Engineer>, onBack: () -> Unit) {
-    Column {
-        Text("Workshop:", style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily(Font(press_start2p)))
-        
-        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text("Assigned Engineer:", style = MaterialTheme.typography.labelLarge, fontFamily = FontFamily(Font(press_start2p)))
-                Text(
-                    text = viewModel.selectedEngineer.value?.let { "${it.getName()} (Discount ready)" } ?: "No one selected",
-                    color = if (viewModel.selectedEngineer.value != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                    fontFamily = FontFamily(Font(press_start2p)),
-                    fontSize = 10.sp
-                )
-            }
-        }
+fun WorkshopContent(viewModel: GarageViewModel, engineers: List<com.bmstu.iu3.automanagement.models.Engineer>, onBack: () -> Unit) {
+    val pixelFont = FontFamily(Font(press_start2p))
 
+    val allComponentsToFix = remember(GameState.getOwnedComponents(), GameState.getAssembledCars()) {
+        val list = GameState.getOwnedComponents().toMutableList()
+        GameState.getAssembledCars().forEach { car ->
+            listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres())
+                .filterNotNull().forEach { if (!list.contains(it)) list.add(it) }
+        }
+        list
+    }
+
+    Column {
+        Text("Workshop:", style = MaterialTheme.typography.titleMedium, fontFamily = pixelFont)
+        
         LazyColumn(modifier = Modifier.weight(1f)) {
             item { 
-                Text("Select Engineer for discount:", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily(Font(press_start2p)))
+                Text("Select Engineer for discount:", style = MaterialTheme.typography.bodySmall, fontFamily = pixelFont)
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            
             items(engineers) { eng ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { viewModel.selectEngineer(eng) },
                     colors = CardDefaults.cardColors(containerColor = if (viewModel.selectedEngineer.value == eng) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Text("${eng.getName()} (Skill: ${eng.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
+                    Text("${eng.getName()} (Skill: ${eng.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 10.sp)
                 }
             }
 
             item { 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Components to fix:", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily(Font(press_start2p)))
+                Text("Components Condition:", style = MaterialTheme.typography.bodySmall, fontFamily = pixelFont)
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            items(inventory) { component ->
+            items(allComponentsToFix) { component ->
                 Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(component.getName(), fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
+                            Text(
+                                text = component.getName() + if (component.isDestroyed()) " [DESTROYED]" else "", 
+                                fontFamily = pixelFont, 
+                                fontSize = 10.sp,
+                                color = if (component.isDestroyed()) Color.Red else Color.Unspecified
+                            )
                             com.bmstu.iu3.automanagement.ui.theme.WearIndicator(component.getWear())
                         }
                         
-                        if (component.getWear() > 0) {
-                            // Расчет цены для отображения в UI
+                        if (component.getWear() > 0 || component.isDestroyed()) {
                             val engineer = viewModel.selectedEngineer.value
-                            var repairCost = component.getPrice() * 0.3 * component.getWear()
-                            engineer?.let {
-                                val discount = it.getSkill() / 200.0
-                                repairCost *= (1.0 - discount)
-                            }
+                            // Если деталь уничтожена, ремонт стоит в 2 раза дороже полной цены
+                            var repairCost = if (component.isDestroyed()) component.getPrice() * 1.5 else component.getPrice() * 0.3 * component.getWear()
+                            
+                            engineer?.let { repairCost *= (1.0 - it.getSkill() / 200.0) }
 
                             Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-                                Text(
-                                    text = String.format(Locale.US, "%.2f $", repairCost),
-                                    fontFamily = FontFamily(Font(press_start2p)),
-                                    fontSize = 8.sp,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
+                                Text(text = String.format(Locale.US, "%.2f $", repairCost), fontFamily = pixelFont, fontSize = 8.sp)
                                 PixelButton(
-                                    text = "FIX",
-                                    onClick = { GameState.repairComponent(component, viewModel.selectedEngineer.value) },
+                                    text = if (component.isDestroyed()) "REBUILD" else "FIX", 
+                                    onClick = { 
+                                        if (GameState.spendMoney(repairCost)) {
+                                            component.setWear(0.0)
+                                            component.setDestroyed(false)
+                                        }
+                                    }, 
                                     baseColor = MaterialTheme.colorScheme.secondary
                                 )
                             }
@@ -193,7 +193,6 @@ fun WorkshopContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        // Back button - gray
-        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
+        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth())
     }
 }

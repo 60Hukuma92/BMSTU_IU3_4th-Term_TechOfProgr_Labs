@@ -1,12 +1,19 @@
 package com.bmstu.iu3.automanagement.models
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 sealed class Component {
     private var id: String = ""
     private var name: String = ""
     private var price: Double = 0.0
-    private var wear: Double = 0.0
     private var performance: Double = 0.0
-    private var isDestroyed: Boolean = false
+    
+    // Используем State для реактивности в Compose
+    private var wearState = mutableDoubleStateOf(0.0)
+    private var isDestroyedState = mutableStateOf(false)
 
     fun getId(): String = id
     fun setId(value: String) { id = value }
@@ -14,19 +21,21 @@ sealed class Component {
     fun setName(value: String) { name = value }
     fun getPrice(): Double = price
     fun setPrice(value: Double) { price = value }
-    fun getWear(): Double = wear
-    fun setWear(value: Double) { wear = value }
+    
+    fun getWear(): Double = wearState.doubleValue
+    fun setWear(value: Double) { wearState.doubleValue = value }
+    
     fun getPerformance(): Double = performance
     fun setPerformance(value: Double) { performance = value }
-    fun isDestroyed(): Boolean = isDestroyed
-    fun setDestroyed(value: Boolean) { isDestroyed = value }
+    
+    fun isDestroyed(): Boolean = isDestroyedState.value
+    fun setDestroyed(value: Boolean) { isDestroyedState.value = value }
 }
 
 class Engine : Component() {
     private var power: Int = 0
     private var weight: Int = 0
     private var type: String = ""
-
     fun getPower(): Int = power
     fun setPower(value: Int) { power = value }
     fun getWeight(): Int = weight
@@ -38,7 +47,6 @@ class Engine : Component() {
 class Gearbox : Component() {
     private var gears: Int = 0
     private var type: String = ""
-
     fun getGears(): Int = gears
     fun setGears(value: Int) { gears = value }
     fun getType(): String = type
@@ -48,7 +56,6 @@ class Gearbox : Component() {
 class Chassis : Component() {
     private var maxEngineWeight: Int = 0
     private var suspensionType: String = ""
-
     fun getMaxEngineWeight(): Int = maxEngineWeight
     fun setMaxEngineWeight(value: Int) { maxEngineWeight = value }
     fun getSuspensionType(): String = suspensionType

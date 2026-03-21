@@ -36,17 +36,18 @@ object MarketGenerator {
 
     private fun generateEngine(): Engine = Engine().apply {
         val quality = Random.nextDouble(0.4, 1.0)
-        setName(listOf("V6", "V8", "V10", "V12").random() + " " + listOf("Eco", "Sport", "Pro", "Turbo").random())
+        val type = if (Random.nextBoolean()) "Bolt-On" else "Integrated"
+        setName(listOf("V6", "V8", "V10", "V12").random() + " [" + type + "]")
         setPrice(1000.0 + (quality * 4000.0))
         setPower((400 + (quality * 600)).toInt())
         setWeight((80 + (1.0 - quality) * 100).toInt())
-        setType(if (Random.nextBoolean()) "Type-A" else "Type-B")
+        setType(type)
         setPerformance(quality * 100.0)
     }
 
     private fun generateGearbox(): Gearbox = Gearbox().apply {
-        val type = if (Random.nextBoolean()) "Type-A" else "Type-B"
-        setName("$type Trans")
+        val type = if (Random.nextBoolean()) "Bolt-On" else "Integrated"
+        setName("Gearbox [" + type + "]")
         setPrice(500.0 + Random.nextDouble(1500.0))
         setType(type)
         setPerformance(Random.nextDouble(30.0, 90.0))
@@ -54,7 +55,7 @@ object MarketGenerator {
 
     private fun generateChassis(): Chassis = Chassis().apply {
         val suspType = if (Random.nextBoolean()) "Active" else "Standard"
-        setName("Chassis " + listOf("Alloy", "Carbon", "Titanium").random())
+        setName("Chassis [" + suspType + "] " + listOf("Alloy", "Carbon", "Titanium").random())
         setPrice(1000.0 + Random.nextDouble(4000.0))
         setMaxEngineWeight(300) 
         setSuspensionType(suspType)
@@ -63,7 +64,7 @@ object MarketGenerator {
 
     private fun generateSuspension(): Suspension = Suspension().apply {
         val type = if (Random.nextBoolean()) "Active" else "Standard"
-        setName("$type Susp")
+        setName("Suspension [" + type + "]")
         setPrice(400.0 + Random.nextDouble(1600.0))
         setType(type)
         setPerformance(Random.nextDouble(30.0, 85.0))

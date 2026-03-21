@@ -47,7 +47,6 @@ class GameLogicTest {
     @Test
     fun `cannot hire if budget is low`() {
         GameState.setBudget(10.0)
-        // Находим любого пилота на рынке
         val expensivePilot = GameState.getMarketPilots().firstOrNull()
         
         assertNotNull("Market should have pilots", expensivePilot)
@@ -111,5 +110,17 @@ class GameLogicTest {
         }
 
         assertTrue("Broken car should have more incidents than good car", incidentsBroken > incidentsGood)
+    }
+
+    @Test
+    fun `terminal incident should destroy components`() {
+        val engine = Engine().apply { setWear(0.0); setDestroyed(false) }
+        val car = Car().apply { setEngine(engine) }
+        val incident = Incident().apply { setSeverity("Terminal") }
+
+        RaceCalculator.applyPostRaceConsequences(car, incident)
+
+        assertTrue("Engine should be destroyed after terminal incident", engine.isDestroyed())
+        assertEquals("Engine wear should be 100% after destruction", 1.0, engine.getWear(), 0.0)
     }
 }

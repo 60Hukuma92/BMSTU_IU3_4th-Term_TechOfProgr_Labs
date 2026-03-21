@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -55,11 +56,24 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                     item { Text("No cars assembled!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
                 } else {
                     items(myCars) { car ->
+                        val hasBrokenParts = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+                        
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedCar = car },
-                            colors = CardDefaults.cardColors(containerColor = if (selectedCar == car) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                            colors = CardDefaults.cardColors(
+                                containerColor = when {
+                                    selectedCar == car -> MaterialTheme.colorScheme.primaryContainer
+                                    hasBrokenParts -> MaterialTheme.colorScheme.errorContainer
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            )
                         ) {
-                            Text(car.getName(), modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text(car.getName(), fontFamily = pixelFont, fontSize = 8.sp)
+                                if (hasBrokenParts) {
+                                    Text("HAS BROKEN PARTS!", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
+                                }
+                            }
                         }
                     }
                 }
@@ -88,10 +102,14 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
             
+            val isBroken = selectedCar?.let { car ->
+                listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+            } ?: false
+
             PixelButton(
-                text = "START RACE",
+                text = if (isBroken) "REPAIR CAR FIRST" else "START RACE",
                 onClick = {
-                    if (selectedCar != null && selectedTrack != null && selectedPilot != null) {
+                    if (selectedCar != null && selectedTrack != null && selectedPilot != null && !isBroken) {
                         val hasHighWear = listOf(selectedCar!!.getEngine(), selectedCar!!.getGearbox(), selectedCar!!.getChassis()).any { it?.getWear() ?: 0.0 > 0.5 }
                         if (hasHighWear) {
                             showWearWarning = true
@@ -100,7 +118,8 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                baseColor = if (selectedCar != null && selectedPilot != null && !isBroken) MaterialTheme.colorScheme.primary else Color.Gray
             )
             
             Spacer(modifier = Modifier.height(8.dp))
