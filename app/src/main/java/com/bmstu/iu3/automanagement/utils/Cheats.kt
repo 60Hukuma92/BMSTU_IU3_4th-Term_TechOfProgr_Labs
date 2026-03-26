@@ -144,7 +144,7 @@ fun DevMenuDialog(onDismiss: () -> Unit) {
 private fun setCarWear(car: Car, wear: Double) {
     listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).forEach {
         it?.setWear(wear.coerceIn(0.0, 1.0))
-        it?.setDestroyed(wear >= 1.0) // Если 100%, то деталь разрушена
+        it?.setDestroyed(wear >= 1.0)
     }
 }
 
