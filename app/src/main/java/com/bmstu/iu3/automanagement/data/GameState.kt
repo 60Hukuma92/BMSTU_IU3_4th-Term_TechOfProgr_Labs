@@ -14,6 +14,7 @@ object GameState {
     private val assembledCars = mutableStateListOf<Car>()
     private val hiredEngineers = mutableStateListOf<Engineer>()
     private val hiredPilots = mutableStateListOf<Pilot>()
+    private val jailedPilots = mutableStateListOf<Pilot>() // Список пилотов в тюрьме
     private val opponentTeams = mutableStateListOf<OpponentTeam>()
     
     // Race related
@@ -51,6 +52,7 @@ object GameState {
     fun getAssembledCars(): List<Car> = assembledCars
     fun getHiredEngineers(): List<Engineer> = hiredEngineers
     fun getHiredPilots(): List<Pilot> = hiredPilots
+    fun getJailedPilots(): List<Pilot> = jailedPilots
     fun getOpponentTeams(): List<OpponentTeam> = opponentTeams
     fun getTracks(): List<Track> = tracks
     fun getRaceHistory(): List<List<RaceResult>> = raceHistory
@@ -60,6 +62,16 @@ object GameState {
     fun removeComponentFromInventory(component: Component) { ownedComponents.remove(component) }
     fun removeCar(car: Car) { assembledCars.remove(car) }
 
+    // Методы для тестов и прямого управления
+    fun clearPersonnel() {
+        hiredPilots.clear()
+        hiredEngineers.clear()
+        jailedPilots.clear()
+    }
+    
+    fun addPilotDirectly(pilot: Pilot) { hiredPilots.add(pilot) }
+    fun addJailedPilotDirectly(pilot: Pilot) { jailedPilots.add(pilot) }
+
     fun setBudget(amount: Double) {
         val currentBudget = budget.value
         currentBudget.setAmount(amount)
@@ -67,7 +79,6 @@ object GameState {
     }
 
     fun buyComponent(component: Component): Boolean {
-        // Проверяем наличие компонента на рынке перед покупкой
         if (marketComponents.contains(component) && spendMoney(component.getPrice())) {
             marketComponents.remove(component)
             ownedComponents.add(component)
@@ -92,6 +103,64 @@ object GameState {
             return true
         }
         return false
+    }
+
+    fun payFine(pilot: Pilot): Boolean {
+        if (pilot.hasFine() && spendMoney(pilot.getFineAmount())) {
+            pilot.setFineAmount(0.0)
+            pilot.setFineDeadline(0)
+            return true
+        }
+        return false
+    }
+
+    fun releaseFromJail(pilot: Pilot): Boolean {
+        // Выкуп из тюрьмы (цена = 50% от годовой зарплаты)
+        val bailAmount = pilot.getSalary() * 0.5
+        if (pilot.isInJail() && spendMoney(bailAmount)) {
+            pilot.setJailSentence(0)
+            jailedPilots.remove(pilot)
+            hiredPilots.add(pilot)
+            return true
+        }
+        return false
+    }
+
+    fun processRaceEndUpdates() {
+        val toJail = mutableListOf<Pilot>()
+        val fromJail = mutableListOf<Pilot>()
+
+        // 1. Обновляем штрафы у нанятых пилотов
+        hiredPilots.toList().forEach { pilot ->
+            if (pilot.hasFine()) {
+                pilot.setFineDeadline(pilot.getFineDeadline() - 1)
+                if (pilot.getFineDeadline() <= 0) {
+                    toJail.add(pilot)
+                }
+            }
+        }
+
+        // 2. Обновляем сроки у ТЕХ, КТО УЖЕ СИДИТ (до добавления новых)
+        jailedPilots.toList().forEach { pilot ->
+            pilot.setJailSentence(pilot.getJailSentence() - 1)
+            if (pilot.getJailSentence() <= 0) {
+                fromJail.add(pilot)
+            }
+        }
+
+        // 3. Переводим "просроченных" в тюрьму (их срок не уменьшится в этом вызове)
+        toJail.forEach { pilot ->
+            hiredPilots.remove(pilot)
+            pilot.setFineAmount(0.0)
+            pilot.setJailSentence(3)
+            jailedPilots.add(pilot)
+        }
+
+        // 4. Возвращаем отсидевших
+        fromJail.forEach { pilot ->
+            jailedPilots.remove(pilot)
+            hiredPilots.add(pilot)
+        }
     }
 
     fun aiTakeComponent(component: Component) { marketComponents.remove(component) }

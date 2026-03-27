@@ -123,7 +123,7 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
             )
             
             Spacer(modifier = Modifier.height(8.dp))
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = MaterialTheme.colorScheme.secondary)
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
         }
 
         if (showWearWarning) {
@@ -151,13 +151,19 @@ private fun runRaceSimulation(car: Car, pilot: Pilot, track: Track, weather: Wea
     val results = mutableListOf<RaceResult>()
     
     // Player
-    val playerIncident = RaceCalculator.checkIncident(car, pilot, weather)
+    val playerIncident = RaceCalculator.checkIncident(car, pilot, track, weather)
     val playerTime = if (playerIncident?.getSeverity() == "Terminal") 999999.0 else RaceCalculator.calculateRaceTime(car, pilot, track, weather)
     results.add(RaceResult().apply { setTeamName("YOU"); setTime(playerTime); setIncident(playerIncident) })
     
+    // ПРИМЕНЯЕМ ЭФФЕКТ ШТРАФА
+    if (playerIncident?.getReason() == "Speeding Fine") {
+        pilot.setFineAmount(playerIncident.getFineAmount())
+        pilot.setFineDeadline(3)
+    }
+
     // AI
     opponents.forEach { team ->
-        val opIncident = RaceCalculator.checkIncident(team.getCar()!!, team.getPilot()!!, weather)
+        val opIncident = RaceCalculator.checkIncident(team.getCar()!!, team.getPilot()!!, track, weather)
         val opTime = if (opIncident?.getSeverity() == "Terminal") 999999.0 else RaceCalculator.calculateRaceTime(team.getCar()!!, team.getPilot()!!, track, weather)
         results.add(RaceResult().apply { setTeamName(team.getName()); setTime(opTime); setIncident(opIncident) })
     }
@@ -174,6 +180,10 @@ private fun runRaceSimulation(car: Car, pilot: Pilot, track: Track, weather: Wea
     
     applyPostRaceConsequences(car, playerIncident)
     GameState.addRaceResult(results)
+    
+    // ОБНОВЛЯЕМ СОСТОЯНИЕ (Штрафы и Тюрьму)
+    GameState.processRaceEndUpdates()
+    
     onComplete()
 }
 
@@ -181,7 +191,7 @@ private fun applyPostRaceConsequences(car: Car, incident: Incident?) {
     val components = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres())
     components.forEach { it?.let { it.setWear((it.getWear() + Random.nextDouble(0.05, 0.15)).coerceAtMost(1.0)) } }
     
-    if (incident != null) {
+    if (incident != null && incident.getReason() == "Technical failure") {
         val brokenCount = if (incident.getSeverity() == "Terminal") 2 else 1
         components.filterNotNull().shuffled().take(brokenCount).forEach {
             it.setDestroyed(true)

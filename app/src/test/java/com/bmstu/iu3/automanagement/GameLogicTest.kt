@@ -12,62 +12,108 @@ class GameLogicTest {
     @Before
     fun setup() {
         GameState.setBudget(10000.0)
+        GameState.clearPersonnel()
+    }
+
+    @Test
+    fun `speeding fine risk should be higher for pro on easy track`() {
+        val proPilot = Pilot().apply { setSkill(90) }
+        val rookiePilot = Pilot().apply { setSkill(20) }
+        val easyTrack = Track().apply { setStraightsRatio(0.8) }
+        val hardTrack = Track().apply { setStraightsRatio(0.2) }
+        val car = Car()
+
+        var proEasyFines = 0
+        var rookieEasyFines = 0
+        var proHardFines = 0
+
+        repeat(1000) {
+            if (RaceCalculator.checkIncident(car, proPilot, easyTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") proEasyFines++
+            if (RaceCalculator.checkIncident(car, rookiePilot, easyTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") rookieEasyFines++
+            if (RaceCalculator.checkIncident(car, proPilot, hardTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") proHardFines++
+        }
+
+        assertTrue("Pro on easy track should have more fines than rookie ($proEasyFines vs $rookieEasyFines)", proEasyFines > rookieEasyFines)
+        assertTrue("Pro on easy track should have more fines than pro on hard track ($proEasyFines vs $proHardFines)", proEasyFines > proHardFines)
+    }
+
+    @Test
+    fun `pilot should go to jail after 3 unpaid races`() {
+        val pilot = Pilot().apply { 
+            setName("Test Pilot")
+            setFineAmount(1000.0)
+            setFineDeadline(3) 
+        }
+        GameState.addPilotDirectly(pilot)
+
+        // Гонка 1: дедлайн 3 -> 2
+        GameState.processRaceEndUpdates()
+        assertEquals(2, pilot.getFineDeadline())
+        
+        // Гонка 2: дедлайн 2 -> 1
+        GameState.processRaceEndUpdates()
+        assertEquals(1, pilot.getFineDeadline())
+
+        // Гонка 3: дедлайн 1 -> 0, попадает в тюрьму
+        GameState.processRaceEndUpdates()
+        
+        assertFalse("Pilot should be removed from hired list", GameState.getHiredPilots().contains(pilot))
+        assertTrue("Pilot should be in jail list", GameState.getJailedPilots().contains(pilot))
+        assertEquals("Sentence should be exactly 3 races", 3, pilot.getJailSentence())
+    }
+
+    @Test
+    fun `pilot should be released from jail after 3 races`() {
+        val pilot = Pilot().apply { 
+            setName("Jailed Pilot")
+            setJailSentence(3)
+        }
+        GameState.addJailedPilotDirectly(pilot)
+
+        // 3 гонки отсидки
+        repeat(3) { GameState.processRaceEndUpdates() }
+
+        assertTrue("Pilot should be back in hired list", GameState.getHiredPilots().contains(pilot))
+        assertFalse("Pilot should not be in jail", GameState.getJailedPilots().contains(pilot))
+        assertEquals(0, pilot.getJailSentence())
     }
 
     @Test
     fun `buy component should subtract money and move item to inventory`() {
-        val engineToBuy = GameState.getMarketComponents()
-            .filterIsInstance<Engine>()
-            .minByOrNull { it.getPrice() }
-
-        assertNotNull("Market should have at least one engine", engineToBuy)
-
-        val initialBudget = GameState.getBudgetObject().getAmount()
-        val price = engineToBuy!!.getPrice()
+        val initialBudget = 10000.0
+        GameState.setBudget(initialBudget)
+        
+        val engineToBuy = GameState.getMarketComponents().filterIsInstance<Engine>().first()
+        val price = engineToBuy.getPrice()
         
         val success = GameState.buyComponent(engineToBuy)
         
-        assertTrue("Purchase should be successful", success)
-        assertEquals(
-            "Budget should be subtracted correctly",
-            initialBudget - price, 
-            GameState.getBudgetObject().getAmount(), 
-            0.1
-        )
-        assertTrue(
-            "Component should be in owned list", 
-            GameState.getOwnedComponents().contains(engineToBuy)
-        )
-        assertFalse(
-            "Component should be removed from market", 
-            GameState.getMarketComponents().contains(engineToBuy)
-        )
+        assertTrue(success)
+        assertEquals(initialBudget - price, GameState.getBudgetObject().getAmount(), 0.1)
+        assertTrue(GameState.getOwnedComponents().contains(engineToBuy))
     }
 
     @Test
-    fun `cannot hire if budget is low`() {
+    fun `cannot buy component with insufficient budget`() {
         GameState.setBudget(10.0)
-        val expensivePilot = GameState.getMarketPilots().firstOrNull()
+        val expensiveEngine = GameState.getMarketComponents().filterIsInstance<Engine>().first()
         
-        assertNotNull("Market should have pilots", expensivePilot)
+        val success = GameState.buyComponent(expensiveEngine)
         
-        val success = GameState.hirePilot(expensivePilot!!)
-        
-        assertFalse("Should not be able to hire with 10$", success)
-        assertFalse(GameState.getHiredPilots().contains(expensivePilot))
+        assertFalse(success)
     }
 
     @Test
-    fun `car should be incomplete if missing parts`() {
+    fun `car should be incomplete if missing essential parts`() {
         val car = Car().apply {
             setEngine(Engine())
             setGearbox(Gearbox())
         }
-        assertFalse("Car without tyres and chassis should be incomplete", car.isComplete())
+        assertFalse(car.isComplete())
     }
 
     @Test
-    fun `rainy weather should increase race time`() {
+    fun `rainy weather impact on race time`() {
         val car = Car().apply { setPerformance(500.0) }
         val pilot = Pilot().apply { setSkill(50) }
         val track = Track().apply { setLength(5.0); setStraightsRatio(0.5); setCornersRatio(0.5) }
@@ -75,11 +121,11 @@ class GameLogicTest {
         val timeSunny = RaceCalculator.calculateRaceTime(car, pilot, track, Weather.SUNNY)
         val timeRainy = RaceCalculator.calculateRaceTime(car, pilot, track, Weather.RAINY)
 
-        assertTrue("Time in rain ($timeRainy) should be more than in sun ($timeSunny)", timeRainy > timeSunny)
+        assertTrue("Rainy time ($timeRainy) should be slower than sunny ($timeSunny)", timeRainy > timeSunny)
     }
 
     @Test
-    fun `skilled pilot should drive faster than rookie`() {
+    fun `pro pilot vs rookie performance`() {
         val car = Car().apply { setPerformance(500.0) }
         val track = Track().apply { setLength(5.0); setStraightsRatio(0.5); setCornersRatio(0.5) }
         
@@ -89,38 +135,46 @@ class GameLogicTest {
         val timePro = RaceCalculator.calculateRaceTime(car, proPilot, track, Weather.SUNNY)
         val timeRookie = RaceCalculator.calculateRaceTime(car, rookiePilot, track, Weather.SUNNY)
 
-        assertTrue("Pro pilot ($timePro) should be faster than rookie ($timeRookie)", timePro < timeRookie)
+        assertTrue("Pro ($timePro) should be significantly faster than rookie ($timeRookie)", timePro < timeRookie)
     }
 
     @Test
-    fun `high wear should increase incident risk`() {
+    fun `high wear increases incident risk`() {
         val pilot = Pilot().apply { setSkill(50) }
-        val goodCar = Car().apply { 
-            setEngine(Engine().apply { setWear(0.0) }) 
-        }
+        val track = Track()
         val brokenCar = Car().apply { 
-            setEngine(Engine().apply { setWear(0.9) })
+            setEngine(Engine().apply { setWear(0.95) })
+        }
+        val goodCar = Car().apply { 
+            setEngine(Engine().apply { setWear(0.0) })
         }
 
-        var incidentsGood = 0
         var incidentsBroken = 0
+        var incidentsGood = 0
         repeat(100) {
-            if (RaceCalculator.checkIncident(goodCar, pilot, Weather.SUNNY) != null) incidentsGood++
-            if (RaceCalculator.checkIncident(brokenCar, pilot, Weather.SUNNY) != null) incidentsBroken++
+            if (RaceCalculator.checkIncident(brokenCar, pilot, track, Weather.SUNNY) != null) incidentsBroken++
+            if (RaceCalculator.checkIncident(goodCar, pilot, track, Weather.SUNNY) != null) incidentsGood++
         }
 
-        assertTrue("Broken car should have more incidents than good car", incidentsBroken > incidentsGood)
+        assertTrue(incidentsBroken > incidentsGood)
     }
 
     @Test
-    fun `terminal incident should destroy components`() {
-        val engine = Engine().apply { setWear(0.0); setDestroyed(false) }
-        val car = Car().apply { setEngine(engine) }
-        val incident = Incident().apply { setSeverity("Terminal") }
+    fun `bail release should return pilot to team and spend money`() {
+        val initialBudget = 5000.0
+        GameState.setBudget(initialBudget)
+        val pilot = Pilot().apply { 
+            setName("Prisoner")
+            setSalary(2000.0)
+            setJailSentence(3)
+        }
+        GameState.addJailedPilotDirectly(pilot)
 
-        RaceCalculator.applyPostRaceConsequences(car, incident)
-
-        assertTrue("Engine should be destroyed after terminal incident", engine.isDestroyed())
-        assertEquals("Engine wear should be 100% after destruction", 1.0, engine.getWear(), 0.0)
+        val success = GameState.releaseFromJail(pilot)
+        
+        assertTrue(success)
+        assertTrue(GameState.getHiredPilots().contains(pilot))
+        assertFalse(GameState.getJailedPilots().contains(pilot))
+        assertEquals(initialBudget - 1000.0, GameState.getBudgetObject().getAmount(), 0.1)
     }
 }

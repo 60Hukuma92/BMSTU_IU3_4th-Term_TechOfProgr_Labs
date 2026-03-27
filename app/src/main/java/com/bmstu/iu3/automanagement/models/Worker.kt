@@ -17,4 +17,20 @@ sealed class Worker {
 
 class Engineer : Worker()
 
-class Pilot : Worker()
+class Pilot : Worker() {
+    private var fineAmount: Double = 0.0
+    private var fineDeadlineRaces: Int = 0 // Сколько гонок осталось на оплату
+    private var jailSentenceRaces: Int = 0 // Сколько гонок осталось сидеть в тюрьме
+
+    fun getFineAmount(): Double = fineAmount
+    fun setFineAmount(value: Double) { fineAmount = value }
+
+    fun getFineDeadline(): Int = fineDeadlineRaces
+    fun setFineDeadline(value: Int) { fineDeadlineRaces = value }
+
+    fun getJailSentence(): Int = jailSentenceRaces
+    fun setJailSentence(value: Int) { jailSentenceRaces = value }
+
+    fun hasFine(): Boolean = fineAmount > 0
+    fun isInJail(): Boolean = jailSentenceRaces > 0
+}
