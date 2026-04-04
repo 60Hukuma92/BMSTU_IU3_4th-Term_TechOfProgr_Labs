@@ -17,6 +17,7 @@ import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 import com.bmstu.iu3.automanagement.utils.RaceCalculator
+import com.bmstu.iu3.automanagement.utils.RaceCalculator.applyPostRaceConsequences
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -185,17 +186,4 @@ private fun runRaceSimulation(car: Car, pilot: Pilot, track: Track, weather: Wea
     GameState.processRaceEndUpdates()
     
     onComplete()
-}
-
-private fun applyPostRaceConsequences(car: Car, incident: Incident?) {
-    val components = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres())
-    components.forEach { it?.let { it.setWear((it.getWear() + Random.nextDouble(0.05, 0.15)).coerceAtMost(1.0)) } }
-    
-    if (incident != null && incident.getReason() == "Technical failure") {
-        val brokenCount = if (incident.getSeverity() == "Terminal") 2 else 1
-        components.filterNotNull().shuffled().take(brokenCount).forEach {
-            it.setDestroyed(true)
-            it.setWear(1.0)
-        }
-    }
 }

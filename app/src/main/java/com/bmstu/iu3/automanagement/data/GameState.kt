@@ -14,14 +14,12 @@ object GameState {
     private val assembledCars = mutableStateListOf<Car>()
     private val hiredEngineers = mutableStateListOf<Engineer>()
     private val hiredPilots = mutableStateListOf<Pilot>()
-    private val jailedPilots = mutableStateListOf<Pilot>() // Список пилотов в тюрьме
+    private val jailedPilots = mutableStateListOf<Pilot>()
     private val opponentTeams = mutableStateListOf<OpponentTeam>()
-    
-    // Race related
+
     private val tracks = mutableStateListOf<Track>()
     private val raceHistory = mutableStateListOf<List<RaceResult>>()
 
-    // Рынок инициализируется один раз при старте через генератор
     private val marketComponents = mutableStateListOf<Component>().apply {
         addAll(MarketGenerator.generateInitialMarket())
     }
@@ -62,7 +60,6 @@ object GameState {
     fun removeComponentFromInventory(component: Component) { ownedComponents.remove(component) }
     fun removeCar(car: Car) { assembledCars.remove(car) }
 
-    // Методы для тестов и прямого управления
     fun clearPersonnel() {
         hiredPilots.clear()
         hiredEngineers.clear()
@@ -115,7 +112,6 @@ object GameState {
     }
 
     fun releaseFromJail(pilot: Pilot): Boolean {
-        // Выкуп из тюрьмы (цена = 50% от годовой зарплаты)
         val bailAmount = pilot.getSalary() * 0.5
         if (pilot.isInJail() && spendMoney(bailAmount)) {
             pilot.setJailSentence(0)
@@ -130,7 +126,6 @@ object GameState {
         val toJail = mutableListOf<Pilot>()
         val fromJail = mutableListOf<Pilot>()
 
-        // 1. Обновляем штрафы у нанятых пилотов
         hiredPilots.toList().forEach { pilot ->
             if (pilot.hasFine()) {
                 pilot.setFineDeadline(pilot.getFineDeadline() - 1)
@@ -140,7 +135,6 @@ object GameState {
             }
         }
 
-        // 2. Обновляем сроки у ТЕХ, КТО УЖЕ СИДИТ (до добавления новых)
         jailedPilots.toList().forEach { pilot ->
             pilot.setJailSentence(pilot.getJailSentence() - 1)
             if (pilot.getJailSentence() <= 0) {
@@ -148,7 +142,6 @@ object GameState {
             }
         }
 
-        // 3. Переводим "просроченных" в тюрьму (их срок не уменьшится в этом вызове)
         toJail.forEach { pilot ->
             hiredPilots.remove(pilot)
             pilot.setFineAmount(0.0)
@@ -156,7 +149,6 @@ object GameState {
             jailedPilots.add(pilot)
         }
 
-        // 4. Возвращаем отсидевших
         fromJail.forEach { pilot ->
             jailedPilots.remove(pilot)
             hiredPilots.add(pilot)
@@ -194,30 +186,4 @@ object GameState {
     }
 
     fun canAfford(price: Double): Boolean = budget.value.getAmount() >= price
-
-    fun repairComponent(component: Component, engineer: Engineer?): Boolean {
-        if (component.getWear() <= 0.0) return false
-        var cost = component.getPrice() * 0.3 * component.getWear()
-        engineer?.let {
-            val discount = it.getSkill() / 200.0
-            cost *= (1.0 - discount)
-        }
-        if (spendMoney(cost)) {
-            component.setWear(0.0)
-            // Trigger UI update
-            val index = ownedComponents.indexOf(component)
-            if (index != -1) { ownedComponents[index] = component }
-            // Check in cars too
-            assembledCars.forEach { car ->
-                if (car.getEngine() == component) car.setEngine(component as Engine)
-                if (car.getGearbox() == component) car.setGearbox(component as Gearbox)
-                if (car.getChassis() == component) car.setChassis(component as Chassis)
-                if (car.getSuspension() == component) car.setSuspension(component as Suspension)
-                if (car.getAerodynamics() == component) car.setAerodynamics(component as Aerodynamics)
-                if (car.getTyres() == component) car.setTyres(component as Tyres)
-            }
-            return true
-        }
-        return false
     }
-}
