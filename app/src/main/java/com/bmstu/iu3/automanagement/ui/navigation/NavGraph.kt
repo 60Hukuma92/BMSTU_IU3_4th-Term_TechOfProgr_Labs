@@ -4,24 +4,44 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.bmstu.iu3.automanagement.data.GameState
+import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.ui.screens.*
 
 @Composable
-fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
+fun SetupNavGraph(
+    navController: NavHostController,
+    onExit: () -> Unit,
+    saveManager: GameSaveManager
+) {
     NavHost(
         navController = navController,
-        startDestination = Screen.MainMenu.route
+        startDestination = Screen.PlayerSelection.route
     ) {
+        composable(Screen.PlayerSelection.route) {
+            PlayerSelectionScreen(
+                saveManager = saveManager,
+                onPlayerSelected = {
+                    navController.navigate(Screen.MainMenu.route) {
+                        popUpTo(Screen.PlayerSelection.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Screen.MainMenu.route) {
             MainMenuScreen(
                 onNavigate = { route -> navController.navigate(route) },
-                onExit = onExit
+                onExit = {
+                    saveManager.saveGame(GameState.getCurrentPlayer())
+                    onExit()
+                }
             )
         }
         composable(Screen.StartRace.route) {
             StartRaceScreen(
                 onBack = { navController.popBackStack() },
                 onRaceComplete = {
+                    saveManager.saveGame(GameState.getCurrentPlayer())
                     navController.navigate(Screen.ViewResults.route) {
                         popUpTo(Screen.MainMenu.route)
                     }
@@ -29,16 +49,28 @@ fun SetupNavGraph(navController: NavHostController, onExit: () -> Unit) {
             )
         }
         composable(Screen.BuyComponents.route) {
-            BuyComponentsScreen { navController.popBackStack() }
+            BuyComponentsScreen {
+                saveManager.saveGame(GameState.getCurrentPlayer())
+                navController.popBackStack()
+            }
         }
         composable(Screen.Garage.route) {
-            AssembleCarScreen { navController.popBackStack() }
+            AssembleCarScreen {
+                saveManager.saveGame(GameState.getCurrentPlayer())
+                navController.popBackStack()
+            }
         }
         composable(Screen.HireEngineers.route) {
-            HireEngineersScreen { navController.popBackStack() }
+            HireEngineersScreen {
+                saveManager.saveGame(GameState.getCurrentPlayer())
+                navController.popBackStack()
+            }
         }
         composable(Screen.HirePilots.route) {
-            HirePilotsScreen { navController.popBackStack() }
+            HirePilotsScreen {
+                saveManager.saveGame(GameState.getCurrentPlayer())
+                navController.popBackStack()
+            }
         }
         composable(Screen.ViewCars.route) {
             ViewCarsScreen { navController.popBackStack() }

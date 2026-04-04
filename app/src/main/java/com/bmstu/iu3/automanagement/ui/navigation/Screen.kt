@@ -1,6 +1,7 @@
 package com.bmstu.iu3.automanagement.ui.navigation
 
 sealed class Screen(val route: String, val title: String) {
+    object PlayerSelection : Screen("player_selection", "Select Player")
     object MainMenu : Screen("main_menu", "Main Menu")
     object StartRace : Screen("start_race", "Start Race")
     object BuyComponents : Screen("buy_components", "Buy Components")

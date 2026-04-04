@@ -9,6 +9,7 @@ import com.bmstu.iu3.automanagement.utils.OpponentGenerator
 
 object GameState {
     private val budget: MutableState<Budget> = mutableStateOf(Budget())
+    private var currentPlayer: String = ""
 
     private val ownedComponents = mutableStateListOf<Component>()
     private val assembledCars = mutableStateListOf<Car>()
@@ -42,6 +43,8 @@ object GameState {
     }
 
     fun getBudgetObject() : Budget = budget.value
+    fun getCurrentPlayer(): String = currentPlayer
+    fun setCurrentPlayer(playerName: String) { currentPlayer = playerName }
     fun getMarketComponents(): List<Component> = marketComponents
     fun getMarketEngineers(): List<Engineer> = marketEngineers
     fun getMarketPilots(): List<Pilot> = marketPilots
@@ -65,9 +68,19 @@ object GameState {
         hiredEngineers.clear()
         jailedPilots.clear()
     }
+
+    fun clearInventory() {
+        ownedComponents.clear()
+        assembledCars.clear()
+        hiredPilots.clear()
+        hiredEngineers.clear()
+        jailedPilots.clear()
+        raceHistory.clear()
+    }
     
     fun addPilotDirectly(pilot: Pilot) { hiredPilots.add(pilot) }
     fun addJailedPilotDirectly(pilot: Pilot) { jailedPilots.add(pilot) }
+    fun addEngineerDirectly(engineer: Engineer) { hiredEngineers.add(engineer) }
 
     fun setBudget(amount: Double) {
         val currentBudget = budget.value

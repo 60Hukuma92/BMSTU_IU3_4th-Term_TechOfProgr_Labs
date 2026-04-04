@@ -18,6 +18,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.bmstu.iu3.automanagement.R.font.game_font
 import com.bmstu.iu3.automanagement.R.font.press_start2p
+import com.bmstu.iu3.automanagement.data.GameState
+import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.models.MainViewModel
 import com.bmstu.iu3.automanagement.ui.navigation.SetupNavGraph
 import com.bmstu.iu3.automanagement.ui.theme.AutoManagementTheme
@@ -31,7 +33,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mainViewModel: MainViewModel = viewModel()
             val budgetText = mainViewModel.getBudgetDisplay()
-            
+            val saveManager = GameSaveManager(this@MainActivity)
+
             var showDevMenu by remember { mutableStateOf(false) }
 
             AutoManagementTheme {
@@ -45,7 +48,17 @@ class MainActivity : ComponentActivity() {
                         containerColor = MaterialTheme.colorScheme.surface,
                         topBar = {
                             TopAppBar(
-                                title = { Text("Auto Management", fontFamily = FontFamily(Font(game_font))) },
+                                title = {
+                                    Column {
+                                        Text("Auto Management", fontFamily = FontFamily(Font(game_font)))
+                                        if (GameState.getCurrentPlayer().isNotEmpty()) {
+                                            Text(
+                                                "Player: ${GameState.getCurrentPlayer()}",
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        }
+                                    }
+                                },
                                 actions = {
                                     IconButton(onClick = { showDevMenu = true }) {
                                         Icon(
@@ -73,7 +86,8 @@ class MainActivity : ComponentActivity() {
                         Box(modifier = Modifier.padding(innerPadding)) {
                             SetupNavGraph(
                                 navController = navController,
-                                onExit = { finish() }
+                                onExit = { finish() },
+                                saveManager = saveManager
                             )
                         }
                     }
