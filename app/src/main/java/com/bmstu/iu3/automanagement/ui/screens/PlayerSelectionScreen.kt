@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.data.GameSaveManager
+import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 
 @Composable
@@ -75,9 +76,9 @@ fun PlayerSelectionScreen(
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            baseColor = if (selectedPlayer == player) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
+                            baseColor = if (selectedPlayer == player)
+                                MaterialTheme.colorScheme.primary
+                            else
                                 MaterialTheme.colorScheme.secondary
                         )
                         IconButton(
@@ -150,7 +151,7 @@ fun NewPlayerDialog(
             Column {
                 OutlinedTextField(
                     value = playerName,
-                    onValueChange = { 
+                    onValueChange = {
                         playerName = it
                         errorMessage = ""
                     },
@@ -189,4 +190,3 @@ fun NewPlayerDialog(
         }
     )
 }
-

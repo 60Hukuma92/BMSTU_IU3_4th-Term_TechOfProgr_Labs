@@ -16,11 +16,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.bmstu.iu3.automanagement.R.font.game_font
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.models.MainViewModel
+import com.bmstu.iu3.automanagement.ui.navigation.Screen
 import com.bmstu.iu3.automanagement.ui.navigation.SetupNavGraph
 import com.bmstu.iu3.automanagement.ui.theme.AutoManagementTheme
 import com.bmstu.iu3.automanagement.utils.DevMenuDialog
@@ -43,20 +43,20 @@ class MainActivity : ComponentActivity() {
                     color = colorResource(id = R.color.black)
                 ) {
                     val navController = rememberNavController()
+                    val currentRoute = navController.currentDestination?.route
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         containerColor = MaterialTheme.colorScheme.surface,
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    Column {
-                                        Text("Auto Management", fontFamily = FontFamily(Font(game_font)))
-                                        if (GameState.getCurrentPlayer().isNotEmpty()) {
-                                            Text(
-                                                "Player: ${GameState.getCurrentPlayer()}",
-                                                style = MaterialTheme.typography.labelSmall
-                                            )
-                                        }
+                                    if (currentRoute != Screen.PlayerSelection.route && GameState.getCurrentPlayer().isNotEmpty()) {
+                                        Text(
+                                            "Player: ${GameState.getCurrentPlayer()}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontFamily = FontFamily(Font(press_start2p))
+                                        )
                                     }
                                 },
                                 actions = {
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                                     
                                     Text(
                                         text = budgetText,
-                                        modifier = Modifier.padding(end = 16.dp),
+                                        modifier = Modifier.padding(end = 8.dp),
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontFamily = FontFamily(Font(press_start2p))
@@ -97,6 +97,15 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        val saveManager = GameSaveManager(this)
+        val currentPlayer = GameState.getCurrentPlayer()
+        if (currentPlayer.isNotEmpty()) {
+            saveManager.saveGame(currentPlayer)
         }
     }
 }

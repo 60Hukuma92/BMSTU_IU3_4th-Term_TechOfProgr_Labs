@@ -8,6 +8,7 @@ sealed class Screen(val route: String, val title: String) {
     object Garage : Screen("garage", "Garage")
     object HireEngineers : Screen("hire_engineers", "Hire Engineers")
     object HirePilots : Screen("hire_pilots", "Hire Pilots")
+    object ManageTracks : Screen("manage_tracks", "Manage Tracks")
     object ViewCars : Screen("view_cars", "View Cars")
     object ViewPersonnel : Screen("view_personnel", "View Personnel")
     object ViewStats : Screen("view_stats", "Race Statistics")

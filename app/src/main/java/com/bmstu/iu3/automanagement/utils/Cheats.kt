@@ -173,10 +173,16 @@ fun DevMenuDialog(onDismiss: () -> Unit) {
                     PixelButton(
                         text = "ADD SPEEDING TRACK", 
                         onClick = { 
-                            GameState.getTracks().toMutableList().apply { 
-                                add(Track().apply { setName("AUTOBYPASS"); setLength(10.0); setStraightsRatio(0.95); setCornersRatio(0.05) }) 
-                            }
-                        }, 
+                            GameState.addTrack(
+                                Track().apply {
+                                    setName("AUTOBYPASS")
+                                    setLength(10.0)
+                                    setStraightsRatio(0.95)
+                                    setCornersRatio(0.05)
+                                    setElevationChange(5.0)
+                                }
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(), 
                         baseColor = Color(0xFF2196F3)
                     )

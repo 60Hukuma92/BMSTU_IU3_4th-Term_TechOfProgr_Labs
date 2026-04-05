@@ -6,11 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.bmstu.iu3.automanagement.models.*
 
-/**
- * Менеджер для сохранения и загрузки полного состояния игры для каждого игрока.
- * Использует SharedPreferences и JSON сериализацию через Gson.
- */
-class GameSaveManager(private val context: Context) {
+class GameSaveManager(context: Context) {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("game_saves", Context.MODE_PRIVATE)
 
@@ -20,7 +16,6 @@ class GameSaveManager(private val context: Context) {
 
     fun saveGame(playerName: String) {
         try {
-            // Конвертируем текущее состояние в сохраняемый формат
             val saveData = GameStateSaveData(
                 playerName = playerName,
                 budget = GameState.getBudgetObject().getAmount(),
@@ -29,13 +24,14 @@ class GameSaveManager(private val context: Context) {
                 hiredEngineers = GameState.getHiredEngineers().map { convertWorker(it, "Engineer") },
                 hiredPilots = GameState.getHiredPilots().map { convertWorker(it, "Pilot") },
                 jailedPilots = GameState.getJailedPilots().map { convertWorker(it, "Pilot") },
+                tracks = GameState.getTracks().map { convertTrack(it) },
                 raceHistory = GameState.getRaceHistory().map { raceList ->
                     raceList.map { race ->
                         RaceResultSaveData(
-                            pilotName = race.getTeamName(), // Используем team name вместо pilot name
+                            pilotName = race.getTeamName(),
                             position = race.getPosition(),
                             time = race.getTime(),
-                            incidents = race.getIncident()?.getReason() ?: "" // Один инцидент, не список
+                            incidents = race.getIncident()?.getReason() ?: ""
                         )
                     }
                 },
@@ -58,63 +54,67 @@ class GameSaveManager(private val context: Context) {
 
     fun loadGame(playerName: String): Boolean {
         return try {
-            if (!gameExists(playerName)) return false
+            if (!gameExists(playerName)) {
+                false
+            } else {
+                val json = sharedPreferences.getString("save_$playerName", null)
+                if (json.isNullOrEmpty()) {
+                    false
+                } else {
+                    val saveData = gson.fromJson(json, GameStateSaveData::class.java)
 
-            val json = sharedPreferences.getString("save_$playerName", null) ?: return false
-            val saveData = gson.fromJson(json, GameStateSaveData::class.java)
+                    GameState.setCurrentPlayer(playerName)
+                    GameState.setBudget(saveData.budget)
+                    GameState.clearInventory()
 
-            // Загружаем состояние из сохранённых данных
-            GameState.setCurrentPlayer(playerName)
-            GameState.setBudget(saveData.budget)
-            GameState.clearInventory()
+                    saveData.ownedComponents.forEach { data ->
+                        val component = createComponentFromSaveData(data)
+                        GameState.addComponent(component)
+                    }
 
-            // Восстанавливаем компоненты
-            saveData.ownedComponents.forEach { data ->
-                val component = createComponentFromSaveData(data)
-                GameState.addComponent(component)
-            }
+                    saveData.assembledCars.forEach { data ->
+                        val car = createCarFromSaveData(data)
+                        GameState.addCar(car)
+                    }
 
-            // Восстанавливаем машины
-            saveData.assembledCars.forEach { data ->
-                val car = createCarFromSaveData(data)
-                GameState.addCar(car)
-            }
+                    saveData.hiredEngineers.forEach { data ->
+                        val engineer = Engineer().apply {
+                            setName(data.name)
+                            setSkill(data.skill)
+                            setSalary(data.salary)
+                        }
+                        GameState.addEngineerDirectly(engineer)
+                    }
 
-            // Восстанавливаем инженеров
-            saveData.hiredEngineers.forEach { data ->
-                val engineer = Engineer().apply {
-                    setName(data.name)
-                    setSkill(data.skill)
-                    setSalary(data.salary)
+                    saveData.hiredPilots.forEach { data ->
+                        val pilot = createPilotFromSaveData(data)
+                        GameState.addPilotDirectly(pilot)
+                    }
+
+                    saveData.jailedPilots.forEach { data ->
+                        val pilot = createPilotFromSaveData(data)
+                        GameState.addJailedPilotDirectly(pilot)
+                    }
+
+                    val loadedTracks = saveData.tracks?.map { createTrackFromSaveData(it) }.orEmpty()
+                    GameState.setTracks(loadedTracks)
+
+                    sharedPreferences.edit().putString("current_player", playerName).apply()
+                    true
                 }
-                GameState.addEngineerDirectly(engineer)
             }
-
-            // Восстанавливаем пилотов
-            saveData.hiredPilots.forEach { data ->
-                val pilot = createPilotFromSaveData(data)
-                GameState.addPilotDirectly(pilot)
-            }
-
-            // Восстанавливаем заключённых пилотов
-            saveData.jailedPilots.forEach { data ->
-                val pilot = createPilotFromSaveData(data)
-                GameState.addJailedPilotDirectly(pilot)
-            }
-
-            sharedPreferences.edit().putString("current_player", playerName).apply()
-            return true
         } catch (e: Exception) {
             e.printStackTrace()
-            return false
+            false
         }
     }
 
     fun createNewGame(playerName: String): Boolean {
         return try {
             GameState.setCurrentPlayer(playerName)
-            GameState.setBudget(10000.0)
+            GameState.setBudget(18000.0)
             GameState.clearInventory()
+            GameState.resetTracksToDefault()
 
             saveGame(playerName)
             true
@@ -149,12 +149,10 @@ class GameSaveManager(private val context: Context) {
                 }
             }.apply()
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
-
-    // === Вспомогательные фу��кции конвертации ===
 
     private fun convertComponent(component: Component): ComponentSaveData {
         return ComponentSaveData(
@@ -171,7 +169,6 @@ class GameSaveManager(private val context: Context) {
                 is Suspension -> "Suspension"
                 is Aerodynamics -> "Aerodynamics"
                 is Tyres -> "Tyres"
-                else -> "Unknown"
             },
             power = if (component is Engine) component.getPower() else null,
             weight = if (component is Engine) component.getWeight() else null,
@@ -201,6 +198,16 @@ class GameSaveManager(private val context: Context) {
             fineAmount = if (worker is Pilot) worker.getFineAmount() else null,
             fineDeadline = if (worker is Pilot) worker.getFineDeadline() else null,
             jailSentence = if (worker is Pilot) worker.getJailSentence() else null
+        )
+    }
+
+    private fun convertTrack(track: Track): TrackSaveData {
+        return TrackSaveData(
+            name = track.getName(),
+            length = track.getLength(),
+            straightsRatio = track.getStraightsRatio(),
+            cornersRatio = track.getCornersRatio(),
+            elevationChange = track.getElevationChange()
         )
     }
 
@@ -257,7 +264,7 @@ class GameSaveManager(private val context: Context) {
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
             }
-            else -> Engine() // Fallback
+            else -> Engine()
         }
     }
 
@@ -282,6 +289,16 @@ class GameSaveManager(private val context: Context) {
             data.fineAmount?.let { setFineAmount(it) }
             data.fineDeadline?.let { setFineDeadline(it) }
             data.jailSentence?.let { setJailSentence(it) }
+        }
+    }
+
+    private fun createTrackFromSaveData(data: TrackSaveData): Track {
+        return Track().apply {
+            setName(data.name)
+            setLength(data.length)
+            setStraightsRatio(data.straightsRatio)
+            setCornersRatio(data.cornersRatio)
+            setElevationChange(data.elevationChange)
         }
     }
 }

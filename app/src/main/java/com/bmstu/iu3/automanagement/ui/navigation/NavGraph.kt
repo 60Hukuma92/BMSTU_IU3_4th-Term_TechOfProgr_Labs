@@ -60,6 +60,12 @@ fun SetupNavGraph(
                 navController.popBackStack()
             }
         }
+        composable(Screen.ManageTracks.route) {
+            ManageTracksScreen {
+                saveManager.saveGame(GameState.getCurrentPlayer())
+                navController.popBackStack()
+            }
+        }
         composable(Screen.HireEngineers.route) {
             HireEngineersScreen {
                 saveManager.saveGame(GameState.getCurrentPlayer())

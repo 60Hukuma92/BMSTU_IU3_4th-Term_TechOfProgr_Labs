@@ -1,10 +1,5 @@
 package com.bmstu.iu3.automanagement.data
 
-/**
- * Data classes для сериализации состояния игры
- */
-
-// Сохраняемые данные компонента
 data class ComponentSaveData(
     val id: String,
     val name: String,
@@ -12,14 +7,13 @@ data class ComponentSaveData(
     val performance: Double,
     val wear: Double,
     val isDestroyed: Boolean,
-    val type: String, // Engine, Gearbox, Chassis, etc.
-    // Специфичные для типа поля
+    val type: String,
+
     val power: Int?,
     val weight: Int?,
     val gears: Int?
 )
 
-// Сохраняемые данные машины
 data class CarSaveData(
     val name: String,
     val performance: Double,
@@ -31,27 +25,32 @@ data class CarSaveData(
     val tyres: ComponentSaveData?
 )
 
-// Сохраняемые данные работника (инженер/пилот)
 data class WorkerSaveData(
     val name: String,
     val skill: Int,
     val salary: Double,
-    val type: String, // Engineer or Pilot
-    // Специфичные для пилота поля
+    val type: String,
+
     val fineAmount: Double?,
     val fineDeadline: Int?,
     val jailSentence: Int?
 )
 
-// Сохраняемые данные результата гонки
 data class RaceResultSaveData(
     val pilotName: String,
     val position: Int,
     val time: Double,
-    val incidents: String // сериализованный список инцидентов
+    val incidents: String
 )
 
-// Главный класс сохранённого состояния
+data class TrackSaveData(
+    val name: String,
+    val length: Double,
+    val straightsRatio: Double,
+    val cornersRatio: Double,
+    val elevationChange: Double
+)
+
 data class GameStateSaveData(
     val playerName: String,
     val budget: Double,
@@ -60,6 +59,7 @@ data class GameStateSaveData(
     val hiredEngineers: List<WorkerSaveData>,
     val hiredPilots: List<WorkerSaveData>,
     val jailedPilots: List<WorkerSaveData>,
+    val tracks: List<TrackSaveData>?,
     val raceHistory: List<List<RaceResultSaveData>>,
     val timestamp: Long
 )

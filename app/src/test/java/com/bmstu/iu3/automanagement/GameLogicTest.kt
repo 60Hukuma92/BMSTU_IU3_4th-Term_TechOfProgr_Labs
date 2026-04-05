@@ -13,6 +13,49 @@ class GameLogicTest {
     fun setup() {
         GameState.setBudget(10000.0)
         GameState.clearPersonnel()
+        GameState.resetTracksToDefault()
+    }
+
+    @Test
+    fun `player can create update and delete track`() {
+        val initialSize = GameState.getTracks().size
+        val customTrack = Track().apply {
+            setName("Custom Ring")
+            setLength(6.2)
+            setStraightsRatio(0.6)
+            setCornersRatio(0.4)
+            setElevationChange(25.0)
+        }
+
+        assertTrue(GameState.addTrack(customTrack))
+        assertEquals(initialSize + 1, GameState.getTracks().size)
+
+        val updatedTrack = Track().apply {
+            setName("Custom Ring GP")
+            setLength(6.5)
+            setStraightsRatio(0.55)
+            setCornersRatio(0.45)
+            setElevationChange(30.0)
+        }
+
+        assertTrue(GameState.updateTrack(initialSize, updatedTrack))
+        assertEquals("Custom Ring GP", GameState.getTracks()[initialSize].getName())
+
+        assertTrue(GameState.removeTrack(initialSize))
+        assertEquals(initialSize, GameState.getTracks().size)
+    }
+
+    @Test
+    fun `invalid track should be rejected`() {
+        val invalidTrack = Track().apply {
+            setName("Bad")
+            setLength(4.0)
+            setStraightsRatio(0.8)
+            setCornersRatio(0.5)
+            setElevationChange(10.0)
+        }
+
+        assertFalse(GameState.addTrack(invalidTrack))
     }
 
     @Test

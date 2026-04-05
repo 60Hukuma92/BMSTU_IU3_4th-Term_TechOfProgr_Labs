@@ -36,10 +36,7 @@ object GameState {
     }
 
     init {
-        // Initialize some tracks
-        tracks.add(Track().apply { setName("Monza"); setLength(5.79); setStraightsRatio(0.7); setCornersRatio(0.3); setElevationChange(10.0) })
-        tracks.add(Track().apply { setName("Monaco"); setLength(3.33); setStraightsRatio(0.2); setCornersRatio(0.8); setElevationChange(40.0) })
-        tracks.add(Track().apply { setName("Spa"); setLength(7.00); setStraightsRatio(0.5); setCornersRatio(0.5); setElevationChange(100.0) })
+        resetTracksToDefault()
     }
 
     fun getBudgetObject() : Budget = budget.value
@@ -77,7 +74,39 @@ object GameState {
         jailedPilots.clear()
         raceHistory.clear()
     }
-    
+
+    fun resetTracksToDefault() {
+        tracks.clear()
+        tracks.addAll(defaultTracks())
+    }
+
+    fun setTracks(newTracks: List<Track>) {
+        tracks.clear()
+        if (newTracks.isEmpty()) {
+            tracks.addAll(defaultTracks())
+        } else {
+            tracks.addAll(newTracks)
+        }
+    }
+
+    fun addTrack(track: Track): Boolean {
+        if (!isTrackValid(track)) return false
+        tracks.add(track)
+        return true
+    }
+
+    fun updateTrack(index: Int, updatedTrack: Track): Boolean {
+        if (index !in tracks.indices || !isTrackValid(updatedTrack)) return false
+        tracks[index] = updatedTrack
+        return true
+    }
+
+    fun removeTrack(index: Int): Boolean {
+        if (index !in tracks.indices || tracks.size <= 1) return false
+        tracks.removeAt(index)
+        return true
+    }
+
     fun addPilotDirectly(pilot: Pilot) { hiredPilots.add(pilot) }
     fun addJailedPilotDirectly(pilot: Pilot) { jailedPilots.add(pilot) }
     fun addEngineerDirectly(engineer: Engineer) { hiredEngineers.add(engineer) }
@@ -199,4 +228,21 @@ object GameState {
     }
 
     fun canAfford(price: Double): Boolean = budget.value.getAmount() >= price
+
+    private fun defaultTracks(): List<Track> = listOf(
+        Track().apply { setName("Monza"); setLength(5.79); setStraightsRatio(0.7); setCornersRatio(0.3); setElevationChange(10.0) },
+        Track().apply { setName("Monaco"); setLength(3.33); setStraightsRatio(0.2); setCornersRatio(0.8); setElevationChange(40.0) },
+        Track().apply { setName("Spa"); setLength(7.00); setStraightsRatio(0.5); setCornersRatio(0.5); setElevationChange(100.0) }
+    )
+
+    private fun isTrackValid(track: Track): Boolean {
+        val straights = track.getStraightsRatio()
+        val corners = track.getCornersRatio()
+        val ratioSum = straights + corners
+        return track.getName().isNotBlank() &&
+            track.getLength() > 0.0 &&
+            straights in 0.0..1.0 &&
+            corners in 0.0..1.0 &&
+            kotlin.math.abs(ratioSum - 1.0) < 0.001
     }
+}

@@ -20,6 +20,7 @@ fun MainMenuScreen(onNavigate: (String) -> Unit, onExit: () -> Unit) {
         Screen.StartRace,
         Screen.BuyComponents,
         Screen.Garage,
+        Screen.ManageTracks,
         Screen.HireEngineers,
         Screen.HirePilots,
         Screen.ViewCars,
