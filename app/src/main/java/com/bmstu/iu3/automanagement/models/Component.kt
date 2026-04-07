@@ -75,3 +75,29 @@ class Tyres : Component() {
     fun getGrip(): Double = grip
     fun setGrip(value: Double) { grip = value }
 }
+
+abstract class Weapon : Component() {
+    private var weight: Int = 0
+    private var accuracy: Double = 0.0
+
+    fun getWeight(): Int = weight
+    fun setWeight(value: Int) { weight = value }
+
+    fun getAccuracy(): Double = accuracy
+    fun setAccuracy(value: Double) { accuracy = value }
+}
+
+class MeleeWeapon : Weapon() {
+    private var impact: Int = 0
+
+    fun getImpact(): Int = impact
+    fun setImpact(value: Int) { impact = value }
+}
+
+class RangedWeapon : Weapon() {
+    private var range: Int = 0
+
+    fun getRange(): Int = range
+    fun setRange(value: Int) { range = value }
+}
+

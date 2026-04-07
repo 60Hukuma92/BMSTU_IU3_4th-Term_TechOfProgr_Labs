@@ -25,7 +25,7 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
     val allComponents = marketViewModel.availableComponents
     val pixelFont = FontFamily(Font(press_start2p))
 
-    val tabs = listOf("ENGINES", "GEARBOX", "CHASSIS", "SUSP", "AERO", "TYRES")
+    val tabs = listOf("ENGINES", "GEARBOX", "CHASSIS", "SUSP", "AERO", "TYRES", "MELEE", "RANGED")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     val filteredComponents = when (selectedTabIndex) {
@@ -35,6 +35,8 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
         3 -> allComponents.filterIsInstance<Suspension>()
         4 -> allComponents.filterIsInstance<Aerodynamics>()
         5 -> allComponents.filterIsInstance<Tyres>()
+        6 -> allComponents.filterIsInstance<MeleeWeapon>()
+        7 -> allComponents.filterIsInstance<RangedWeapon>()
         else -> allComponents
     }
 
@@ -82,6 +84,8 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                                         is Engine -> "Power: ${component.getPower()} | ${component.getType()}"
                                         is Gearbox -> "Type: ${component.getType()}"
                                         is Chassis -> "Susp: ${component.getSuspensionType()}"
+                                        is MeleeWeapon -> "Impact: ${component.getImpact()} | Weight: ${component.getWeight()}"
+                                        is RangedWeapon -> "Range: ${component.getRange()} | Weight: ${component.getWeight()}"
                                         else -> "Perf: ${String.format(Locale.US, "%.1f", component.getPerformance())}"
                                     }
                                     Text(text = statsText, fontSize = 6.sp, fontFamily = pixelFont)

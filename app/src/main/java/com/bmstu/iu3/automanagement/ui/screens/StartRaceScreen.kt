@@ -18,114 +18,138 @@ import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 import com.bmstu.iu3.automanagement.utils.RaceCalculator
 import com.bmstu.iu3.automanagement.utils.RaceCalculator.applyPostRaceConsequences
-import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
     val pixelFont = FontFamily(Font(press_start2p))
-    
-    val tracks = GameState.getTracks()
-    val myCars = GameState.getAssembledCars()
-    val myPilots = GameState.getHiredPilots()
-    
-    var selectedTrack by remember { mutableStateOf(tracks.firstOrNull()) }
-    var selectedCar by remember { mutableStateOf<Car?>(null) }
-    var selectedPilot by remember { mutableStateOf<Pilot?>(null) }
-    val weather = remember { Weather.values().random() }
-
-    var showWearWarning by remember { mutableStateOf(false) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("CLASSIC", "SURVIVAL")
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Race Prep", fontFamily = pixelFont, fontSize = 12.sp) }) }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                item { Text("SELECT TRACK:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
-                items(tracks) { track ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedTrack = track },
-                        colors = CardDefaults.cardColors(containerColor = if (selectedTrack == track) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Text("${track.getName()} (${track.getLength()} km)", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
-                    }
+            TabRow(selectedTabIndex = selectedTabIndex) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title, fontFamily = pixelFont, fontSize = 9.sp) }
+                    )
                 }
+            }
 
-                item { Spacer(Modifier.height(16.dp)); Text("SELECT CAR:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
-                if (myCars.isEmpty()) {
-                    item { Text("No cars assembled!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
-                } else {
-                    items(myCars) { car ->
-                        val hasBrokenParts = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
-                        
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedCar = car },
-                            colors = CardDefaults.cardColors(
-                                containerColor = when {
-                                    selectedCar == car -> MaterialTheme.colorScheme.primaryContainer
-                                    hasBrokenParts -> MaterialTheme.colorScheme.errorContainer
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text(car.getName(), fontFamily = pixelFont, fontSize = 8.sp)
-                                if (hasBrokenParts) {
-                                    Text("HAS BROKEN PARTS!", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
-                                }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            when (selectedTabIndex) {
+                0 -> ClassicRaceTab(onBack = onBack, onRaceComplete = onRaceComplete)
+                else -> SurvivalTabPlaceholder(onBack = onBack)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
+    val pixelFont = FontFamily(Font(press_start2p))
+
+    val tracks = GameState.getTracks()
+    val myCars = GameState.getAssembledCars()
+    val myPilots = GameState.getHiredPilots()
+
+    var selectedTrack by remember { mutableStateOf(tracks.firstOrNull()) }
+    var selectedCar by remember { mutableStateOf<Car?>(null) }
+    var selectedPilot by remember { mutableStateOf<Pilot?>(null) }
+    val weather = remember { Weather.entries.random() }
+    var showWearWarning by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            item { Text("SELECT TRACK:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+            items(tracks) { track ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedTrack = track },
+                    colors = CardDefaults.cardColors(containerColor = if (selectedTrack == track) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Text("${track.getName()} (${track.getLength()} km)", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)); Text("SELECT CAR:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+            if (myCars.isEmpty()) {
+                item { Text("No cars assembled!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
+            } else {
+                items(myCars) { car ->
+                    val hasBrokenParts = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedCar = car },
+                        colors = CardDefaults.cardColors(
+                            containerColor = when {
+                                selectedCar == car -> MaterialTheme.colorScheme.primaryContainer
+                                hasBrokenParts -> MaterialTheme.colorScheme.errorContainer
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text(car.getName(), fontFamily = pixelFont, fontSize = 8.sp)
+                            if (hasBrokenParts) {
+                                Text("HAS BROKEN PARTS!", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
                             }
                         }
                     }
                 }
+            }
 
-                item { Spacer(Modifier.height(16.dp)); Text("SELECT PILOT:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
-                if (myPilots.isEmpty()) {
-                    item { Text("No pilots hired!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
-                } else {
-                    items(myPilots) { pilot ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedPilot = pilot },
-                            colors = CardDefaults.cardColors(containerColor = if (selectedPilot == pilot) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Text("${pilot.getName()} (Skill: ${pilot.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-                        Text("WEATHER: ${weather.name}", modifier = Modifier.padding(12.dp), fontFamily = pixelFont, fontSize = 10.sp)
+            item { Spacer(Modifier.height(16.dp)); Text("SELECT PILOT:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+            if (myPilots.isEmpty()) {
+                item { Text("No pilots hired!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
+            } else {
+                items(myPilots) { pilot ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedPilot = pilot },
+                        colors = CardDefaults.cardColors(containerColor = if (selectedPilot == pilot) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Text("${pilot.getName()} (Skill: ${pilot.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            val isBroken = selectedCar?.let { car ->
-                listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
-            } ?: false
-
-            PixelButton(
-                text = if (isBroken) "REPAIR CAR FIRST" else "START RACE",
-                onClick = {
-                    if (selectedCar != null && selectedTrack != null && selectedPilot != null && !isBroken) {
-                        val hasHighWear = listOf(selectedCar!!.getEngine(), selectedCar!!.getGearbox(), selectedCar!!.getChassis()).any { it?.getWear() ?: 0.0 > 0.5 }
-                        if (hasHighWear) {
-                            showWearWarning = true
-                        } else {
-                            runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                baseColor = if (selectedCar != null && selectedPilot != null && !isBroken) MaterialTheme.colorScheme.primary else Color.Gray
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
+            item {
+                Spacer(Modifier.height(16.dp))
+                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                    Text("WEATHER: ${weather.name}", modifier = Modifier.padding(12.dp), fontFamily = pixelFont, fontSize = 10.sp)
+                }
+            }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val isBroken = selectedCar?.let { car ->
+            listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+        } ?: false
+
+        PixelButton(
+            text = if (isBroken) "REPAIR CAR FIRST" else "START RACE",
+            onClick = {
+                if (selectedCar != null && selectedTrack != null && selectedPilot != null && !isBroken) {
+                    val hasHighWear = listOf(selectedCar!!.getEngine(), selectedCar!!.getGearbox(), selectedCar!!.getChassis())
+                        .any { (it?.getWear() ?: 0.0) > 0.5 }
+                    if (hasHighWear) {
+                        showWearWarning = true
+                    } else {
+                        runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            baseColor = if (selectedCar != null && selectedPilot != null && !isBroken) MaterialTheme.colorScheme.primary else Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
 
         if (showWearWarning) {
             AlertDialog(
@@ -133,7 +157,7 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 title = { Text("WARNING: HIGH WEAR", fontFamily = pixelFont, fontSize = 12.sp) },
                 text = { Text("Critical wear! Continue?", fontFamily = pixelFont, fontSize = 8.sp) },
                 confirmButton = {
-                    Button(onClick = { 
+                    Button(onClick = {
                         showWearWarning = false
                         runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
                     }) { Text("RACE ANYWAY") }
@@ -143,6 +167,27 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun SurvivalTabPlaceholder(onBack: () -> Unit) {
+    val pixelFont = FontFamily(Font(press_start2p))
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Text(
+                text = "Survival mode setup is coming next. Configure weaponized cars in Garage/Market for now.",
+                modifier = Modifier.padding(12.dp),
+                fontFamily = pixelFont,
+                fontSize = 8.sp
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
     }
 }
 

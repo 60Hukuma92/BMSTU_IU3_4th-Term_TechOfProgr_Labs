@@ -15,6 +15,9 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
     var selectedSuspension = mutableStateOf<Suspension?>(null)
     var selectedAero = mutableStateOf<Aerodynamics?>(null)
     var selectedTyres = mutableStateOf<Tyres?>(null)
+    var selectedMeleeWeapon1 = mutableStateOf<MeleeWeapon?>(null)
+    var selectedMeleeWeapon2 = mutableStateOf<MeleeWeapon?>(null)
+    var selectedRangedWeapon = mutableStateOf<RangedWeapon?>(null)
 
     var selectedEngineer = mutableStateOf<Engineer?>(null)
 
@@ -41,6 +44,21 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
             is Tyres -> {
                 selectedTyres.value = if (selectedTyres.value == component) null else component
             }
+            is MeleeWeapon -> {
+                when {
+                    selectedMeleeWeapon1.value == component -> selectedMeleeWeapon1.value = null
+                    selectedMeleeWeapon2.value == component -> selectedMeleeWeapon2.value = null
+                    selectedMeleeWeapon1.value == null -> selectedMeleeWeapon1.value = component
+                    selectedMeleeWeapon2.value == null -> selectedMeleeWeapon2.value = component
+                    else -> selectedMeleeWeapon2.value = component
+                }
+            }
+            is RangedWeapon -> {
+                selectedRangedWeapon.value = if (selectedRangedWeapon.value == component) null else component
+            }
+            else -> {
+                // Fallback for base Weapon/other future component subtypes.
+            }
         }
     }
     
@@ -55,6 +73,9 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
         val suspension = selectedSuspension.value
         val aerodynamics = selectedAero.value
         val tyres= selectedTyres.value
+        val meleeWeapon1 = selectedMeleeWeapon1.value
+        val meleeWeapon2 = selectedMeleeWeapon2.value
+        val rangedWeapon = selectedRangedWeapon.value
         val engineer = selectedEngineer.value
 
         if (engine == null || gearbox == null || chassis == null || suspension == null || aerodynamics == null || tyres == null) {
@@ -82,6 +103,13 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
+        val overweightWeapon = listOfNotNull(meleeWeapon1, meleeWeapon2, rangedWeapon)
+            .firstOrNull { it.getWeight() > chassis.getMaxEngineWeight() }
+        if (overweightWeapon != null) {
+            Toast.makeText(getApplication(), "Weapon ${overweightWeapon.getName()} is too heavy for this chassis", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val newCar = Car().apply {
             setName("Formula - ${engineer.getName()}'s Build")
             setEngine(engine)
@@ -90,7 +118,10 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
             setSuspension(suspension)
             setAerodynamics(aerodynamics)
             setTyres(tyres)
-            
+            setMeleeWeapon1(meleeWeapon1)
+            setMeleeWeapon2(meleeWeapon2)
+            setRangedWeapon(rangedWeapon)
+
             val skillBonus = engineer.getSkill() / 100.0
             setPerformance(getTotalPerformance() * (1.0 + skillBonus))
         }
@@ -103,6 +134,9 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
         GameState.removeComponentFromInventory(suspension)
         GameState.removeComponentFromInventory(aerodynamics)
         GameState.removeComponentFromInventory(tyres)
+        meleeWeapon1?.let { GameState.removeComponentFromInventory(it) }
+        meleeWeapon2?.let { GameState.removeComponentFromInventory(it) }
+        rangedWeapon?.let { GameState.removeComponentFromInventory(it) }
 
         clearSelection()
         
@@ -116,6 +150,9 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
         selectedSuspension.value = null
         selectedAero.value = null
         selectedTyres.value = null
+        selectedMeleeWeapon1.value = null
+        selectedMeleeWeapon2.value = null
+        selectedRangedWeapon.value = null
         selectedEngineer.value = null
     }
 }

@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.sp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.Car
 import com.bmstu.iu3.automanagement.models.Component
+import com.bmstu.iu3.automanagement.models.MeleeWeapon
+import com.bmstu.iu3.automanagement.models.RangedWeapon
+import com.bmstu.iu3.automanagement.models.Weapon
+import java.util.Locale
 
 @Composable
 fun PixelButton(
@@ -122,6 +126,20 @@ fun ComponentCard(component: Component, isSelected: Boolean = false, onClick: ()
                 fontFamily = FontFamily(Font(press_start2p)),
                 fontSize = 8.sp
             )
+            val stats = when (component) {
+                is MeleeWeapon -> "Impact ${component.getImpact()} | W ${component.getWeight()}"
+                is RangedWeapon -> "Range ${component.getRange()} | W ${component.getWeight()}"
+                is Weapon -> "Acc ${String.format(Locale.US, "%.2f", component.getAccuracy())} | W ${component.getWeight()}"
+                else -> null
+            }
+            stats?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily(Font(press_start2p)),
+                    fontSize = 8.sp
+                )
+            }
             WearIndicator(wear = component.getWear())
         }
     }
@@ -140,7 +158,7 @@ fun CarCard(car: Car) {
             val displayPerformance = if (car.getPerformance() > 0) car.getPerformance() else car.getTotalPerformance()
             
             Text(
-                text = "Power: ${String.format("%.1f", displayPerformance)}",
+                text = "Power: ${String.format(Locale.US, "%.1f", displayPerformance)}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily(Font(press_start2p)),
                 color = MaterialTheme.colorScheme.primary,
@@ -155,6 +173,27 @@ fun CarCard(car: Car) {
                 car.getGearbox()?.let { WearIndicator(it.getWear()) }
                 car.getChassis()?.let { WearIndicator(it.getWear()) }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("WEAPONS:", style = MaterialTheme.typography.labelLarge, fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
+            Text(
+                text = "M1: ${car.getMeleeWeapon1()?.getName() ?: "---"}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily(Font(press_start2p)),
+                fontSize = 8.sp
+            )
+            Text(
+                text = "M2: ${car.getMeleeWeapon2()?.getName() ?: "---"}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily(Font(press_start2p)),
+                fontSize = 8.sp
+            )
+            Text(
+                text = "R: ${car.getRangedWeapon()?.getName() ?: "---"}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily(Font(press_start2p)),
+                fontSize = 8.sp
+            )
         }
     }
 }

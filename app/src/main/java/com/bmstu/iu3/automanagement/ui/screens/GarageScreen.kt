@@ -82,6 +82,9 @@ fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
                 SlotItem("Suspension", viewModel.selectedSuspension.value?.getName())
                 SlotItem("Aero", viewModel.selectedAero.value?.getName())
                 SlotItem("Tyres", viewModel.selectedTyres.value?.getName())
+                SlotItem("Melee #1", viewModel.selectedMeleeWeapon1.value?.getName())
+                SlotItem("Melee #2", viewModel.selectedMeleeWeapon2.value?.getName())
+                SlotItem("Ranged", viewModel.selectedRangedWeapon.value?.getName())
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 SlotItem("Engineer", viewModel.selectedEngineer.value?.getName())
             }
@@ -103,7 +106,9 @@ fun AssembleContent(viewModel: GarageViewModel, inventory: List<com.bmstu.iu3.au
             items(inventory) { component ->
                 val isSelected = component == viewModel.selectedEngine.value || component == viewModel.selectedGearbox.value ||
                                  component == viewModel.selectedChassis.value || component == viewModel.selectedSuspension.value ||
-                                 component == viewModel.selectedAero.value || component == viewModel.selectedTyres.value
+                                 component == viewModel.selectedAero.value || component == viewModel.selectedTyres.value ||
+                                 component == viewModel.selectedMeleeWeapon1.value || component == viewModel.selectedMeleeWeapon2.value ||
+                                 component == viewModel.selectedRangedWeapon.value
                 ComponentCard(component = component, isSelected = isSelected) { viewModel.selectComponent(component) }
             }
         }
@@ -124,8 +129,7 @@ fun WorkshopContent(viewModel: GarageViewModel, engineers: List<com.bmstu.iu3.au
     val allComponentsToFix = remember(GameState.getOwnedComponents(), GameState.getAssembledCars()) {
         val list = GameState.getOwnedComponents().toMutableList()
         GameState.getAssembledCars().forEach { car ->
-            listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres())
-                .filterNotNull().forEach { if (!list.contains(it)) list.add(it) }
+            car.getAllInstalledComponents().forEach { if (!list.contains(it)) list.add(it) }
         }
         list
     }

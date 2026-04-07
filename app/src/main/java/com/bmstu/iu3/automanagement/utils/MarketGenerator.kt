@@ -31,6 +31,8 @@ object MarketGenerator {
         repeat(30) { components.add(generateSuspension()) }
         repeat(30) { components.add(generateAerodynamics()) }
         repeat(30) { components.add(generateTyres()) }
+        repeat(20) { components.add(generateMeleeWeapon()) }
+        repeat(15) { components.add(generateRangedWeapon()) }
         return components
     }
 
@@ -81,6 +83,26 @@ object MarketGenerator {
         setPrice(300.0 + Random.nextDouble(700.0))
         setGrip(0.8 + Random.nextDouble(0.7))
         setPerformance(Random.nextDouble(50.0, 90.0))
+    }
+
+    private fun generateMeleeWeapon(): MeleeWeapon = MeleeWeapon().apply {
+        val quality = Random.nextDouble(0.5, 1.0)
+        setName(listOf("Rammer", "Saw Blade", "Shock Baton").random())
+        setPrice(400.0 + Random.nextDouble(1400.0))
+        setWeight((40 + (1.0 - quality) * 80).toInt())
+        setImpact((30 + quality * 70).toInt())
+        setAccuracy(0.45 + quality * 0.45)
+        setPerformance(Random.nextDouble(5.0, 15.0))
+    }
+
+    private fun generateRangedWeapon(): RangedWeapon = RangedWeapon().apply {
+        val quality = Random.nextDouble(0.5, 1.0)
+        setName(listOf("Pulse Cannon", "EMP Launcher", "Rail Shot").random())
+        setPrice(700.0 + Random.nextDouble(2000.0))
+        setWeight((50 + (1.0 - quality) * 90).toInt())
+        setRange((200 + quality * 800).toInt())
+        setAccuracy(0.4 + quality * 0.5)
+        setPerformance(Random.nextDouble(6.0, 18.0))
     }
 
     private fun generateRandomName(): String = "${firstNames.random()} ${lastNames.random()}"
