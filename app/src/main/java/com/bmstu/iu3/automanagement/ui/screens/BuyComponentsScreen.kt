@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
+import com.bmstu.iu3.automanagement.ui.theme.buildComponentStatsText
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,15 +81,7 @@ fun BuyComponentsScreen(onBack: () -> Unit) {
                                         fontSize = 8.sp,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
-                                    val statsText = when(component) {
-                                        is Engine -> "Power: ${component.getPower()} | ${component.getType()}"
-                                        is Gearbox -> "Type: ${component.getType()}"
-                                        is Chassis -> "Susp: ${component.getSuspensionType()}"
-                                        is MeleeWeapon -> "Impact: ${component.getImpact()} | Weight: ${component.getWeight()}"
-                                        is RangedWeapon -> "Range: ${component.getRange()} | Weight: ${component.getWeight()}"
-                                        else -> "Perf: ${String.format(Locale.US, "%.1f", component.getPerformance())}"
-                                    }
-                                    Text(text = statsText, fontSize = 6.sp, fontFamily = pixelFont)
+                                    Text(text = buildComponentStatsText(component), fontSize = 6.sp, fontFamily = pixelFont)
                                 }
                                 PixelButton(text = "BUY", onClick = { marketViewModel.buyComponent(component) }, baseColor = MaterialTheme.colorScheme.tertiary)
                             }

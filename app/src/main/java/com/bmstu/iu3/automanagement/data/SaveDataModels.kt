@@ -53,6 +53,14 @@ data class RaceResultSaveData(
     val incidents: String
 )
 
+data class TrackSaveData(
+    val name: String,
+    val length: Double,
+    val straightsRatio: Double,
+    val cornersRatio: Double,
+    val elevationChange: Double
+)
+
 data class GameStateSaveData(
     val playerName: String,
     val budget: Double,
@@ -61,6 +69,7 @@ data class GameStateSaveData(
     val hiredEngineers: List<WorkerSaveData>,
     val hiredPilots: List<WorkerSaveData>,
     val jailedPilots: List<WorkerSaveData>,
+    val tracks: List<TrackSaveData>? = null,
     val raceHistory: List<List<RaceResultSaveData>>,
     val timestamp: Long
 )

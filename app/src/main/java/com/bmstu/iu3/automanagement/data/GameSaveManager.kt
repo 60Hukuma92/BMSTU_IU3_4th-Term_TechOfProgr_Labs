@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.bmstu.iu3.automanagement.models.*
+import com.bmstu.iu3.automanagement.utils.ComponentComparator
 
 class GameSaveManager(context: Context) {
     private val sharedPreferences: SharedPreferences =
@@ -114,7 +115,6 @@ class GameSaveManager(context: Context) {
             GameState.setCurrentPlayer(playerName)
             GameState.setBudget(18000.0)
             GameState.clearInventory()
-            GameState.resetTracksToDefault()
 
             saveGame(playerName)
             true
@@ -169,10 +169,30 @@ class GameSaveManager(context: Context) {
                 is Suspension -> "Suspension"
                 is Aerodynamics -> "Aerodynamics"
                 is Tyres -> "Tyres"
+                is MeleeWeapon -> "MeleeWeapon"
+                is RangedWeapon -> "RangedWeapon"
+                is Weapon -> "Weapon"
             },
             power = if (component is Engine) component.getPower() else null,
-            weight = if (component is Engine) component.getWeight() else null,
-            gears = if (component is Gearbox) component.getGears() else null
+            weight = when (component) {
+                is Engine -> component.getWeight()
+                is Weapon -> component.getWeight()
+                else -> null
+            },
+            gears = if (component is Gearbox) component.getGears() else null,
+            componentType = when (component) {
+                is Engine -> component.getType()
+                is Gearbox -> component.getType()
+                is Suspension -> component.getType()
+                is Chassis -> component.getSuspensionType()
+                else -> null
+            },
+            maxEngineWeight = if (component is Chassis) component.getMaxEngineWeight() else null,
+            suspensionType = if (component is Chassis) component.getSuspensionType() else null,
+            grip = if (component is Tyres) component.getGrip() else null,
+            accuracy = if (component is Weapon) component.getAccuracy() else null,
+            impact = if (component is MeleeWeapon) component.getImpact() else null,
+            range = if (component is RangedWeapon) component.getRange() else null
         )
     }
 
@@ -185,7 +205,10 @@ class GameSaveManager(context: Context) {
             chassis = car.getChassis()?.let { convertComponent(it) },
             suspension = car.getSuspension()?.let { convertComponent(it) },
             aerodynamics = car.getAerodynamics()?.let { convertComponent(it) },
-            tyres = car.getTyres()?.let { convertComponent(it) }
+            tyres = car.getTyres()?.let { convertComponent(it) },
+            meleeWeapon1 = car.getMeleeWeapon1()?.let { convertComponent(it) },
+            meleeWeapon2 = car.getMeleeWeapon2()?.let { convertComponent(it) },
+            rangedWeapon = car.getRangedWeapon()?.let { convertComponent(it) }
         )
     }
 
@@ -221,7 +244,8 @@ class GameSaveManager(context: Context) {
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
                 data.power?.let { setPower(it) }
-                data.weight?.let { setWeight(it) }
+                setWeight(ComponentComparator.normalizeEngineWeight(data.weight))
+                setType(data.componentType ?: "Bolt-On")
             }
             "Gearbox" -> Gearbox().apply {
                 setId(data.id)
@@ -231,6 +255,7 @@ class GameSaveManager(context: Context) {
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
                 data.gears?.let { setGears(it) }
+                setType(data.componentType ?: "Bolt-On")
             }
             "Chassis" -> Chassis().apply {
                 setId(data.id)
@@ -239,6 +264,8 @@ class GameSaveManager(context: Context) {
                 setPerformance(data.performance)
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
+                setMaxEngineWeight(ComponentComparator.normalizeChassisEngineLimit(data.maxEngineWeight))
+                setSuspensionType(data.suspensionType ?: data.componentType ?: "Standard")
             }
             "Suspension" -> Suspension().apply {
                 setId(data.id)
@@ -247,6 +274,7 @@ class GameSaveManager(context: Context) {
                 setPerformance(data.performance)
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
+                setType(data.componentType ?: "Standard")
             }
             "Aerodynamics" -> Aerodynamics().apply {
                 setId(data.id)
@@ -256,6 +284,39 @@ class GameSaveManager(context: Context) {
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
             }
+            "MeleeWeapon" -> MeleeWeapon().apply {
+                setId(data.id)
+                setName(data.name)
+                setPrice(data.price)
+                setPerformance(data.performance)
+                setWear(data.wear)
+                setDestroyed(data.isDestroyed)
+                setWeight((data.weight ?: 0).coerceAtLeast(1))
+                setAccuracy(data.accuracy ?: 0.5)
+                setImpact(data.impact ?: 40)
+            }
+            "RangedWeapon" -> RangedWeapon().apply {
+                setId(data.id)
+                setName(data.name)
+                setPrice(data.price)
+                setPerformance(data.performance)
+                setWear(data.wear)
+                setDestroyed(data.isDestroyed)
+                setWeight((data.weight ?: 0).coerceAtLeast(1))
+                setAccuracy(data.accuracy ?: 0.5)
+                setRange(data.range ?: 300)
+            }
+            "Weapon" -> MeleeWeapon().apply {
+                setId(data.id)
+                setName(data.name)
+                setPrice(data.price)
+                setPerformance(data.performance)
+                setWear(data.wear)
+                setDestroyed(data.isDestroyed)
+                setWeight((data.weight ?: 0).coerceAtLeast(1))
+                setAccuracy(data.accuracy ?: 0.5)
+                setImpact(data.impact ?: 40)
+            }
             "Tyres" -> Tyres().apply {
                 setId(data.id)
                 setName(data.name)
@@ -263,6 +324,7 @@ class GameSaveManager(context: Context) {
                 setPerformance(data.performance)
                 setWear(data.wear)
                 setDestroyed(data.isDestroyed)
+                setGrip(data.grip ?: 1.0)
             }
             else -> Engine()
         }
@@ -278,6 +340,9 @@ class GameSaveManager(context: Context) {
             data.suspension?.let { setSuspension(createComponentFromSaveData(it) as Suspension) }
             data.aerodynamics?.let { setAerodynamics(createComponentFromSaveData(it) as Aerodynamics) }
             data.tyres?.let { setTyres(createComponentFromSaveData(it) as Tyres) }
+            data.meleeWeapon1?.let { setMeleeWeapon1(createComponentFromSaveData(it) as MeleeWeapon) }
+            data.meleeWeapon2?.let { setMeleeWeapon2(createComponentFromSaveData(it) as MeleeWeapon) }
+            data.rangedWeapon?.let { setRangedWeapon(createComponentFromSaveData(it) as RangedWeapon) }
         }
     }
 
@@ -301,4 +366,5 @@ class GameSaveManager(context: Context) {
             setElevationChange(data.elevationChange)
         }
     }
+
 }

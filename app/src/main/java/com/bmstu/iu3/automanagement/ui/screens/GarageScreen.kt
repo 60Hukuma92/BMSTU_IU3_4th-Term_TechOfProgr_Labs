@@ -18,6 +18,7 @@ import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.ui.theme.ComponentCard
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 import com.bmstu.iu3.automanagement.ui.theme.SlotItem
+import com.bmstu.iu3.automanagement.ui.theme.buildComponentStatsText
 import com.bmstu.iu3.automanagement.data.GameState
 import java.util.Locale
 
@@ -166,6 +167,11 @@ fun WorkshopContent(viewModel: GarageViewModel, engineers: List<com.bmstu.iu3.au
                                 fontFamily = pixelFont, 
                                 fontSize = 10.sp,
                                 color = if (component.isDestroyed()) Color.Red else Color.Unspecified
+                            )
+                            Text(
+                                text = buildComponentStatsText(component),
+                                fontFamily = pixelFont,
+                                fontSize = 8.sp
                             )
                             com.bmstu.iu3.automanagement.ui.theme.WearIndicator(component.getWear())
                         }

@@ -42,7 +42,8 @@ object MarketGenerator {
         setName(listOf("V6", "V8", "V10", "V12").random() + " [" + type + "]")
         setPrice(1000.0 + (quality * 4000.0))
         setPower((400 + (quality * 600)).toInt())
-        setWeight((80 + (1.0 - quality) * 100).toInt())
+        val rawWeight = (75 + (1.0 - quality) * 80).toInt()
+        setWeight(ComponentComparator.normalizeEngineWeight(rawWeight))
         setType(type)
         setPerformance(quality * 100.0)
     }
@@ -56,10 +57,12 @@ object MarketGenerator {
     }
 
     private fun generateChassis(): Chassis = Chassis().apply {
+        val quality = Random.nextDouble(0.4, 1.0)
         val suspType = if (Random.nextBoolean()) "Active" else "Standard"
         setName("Chassis [" + suspType + "] " + listOf("Alloy", "Carbon", "Titanium").random())
         setPrice(1000.0 + Random.nextDouble(4000.0))
-        setMaxEngineWeight(300) 
+        val rawLimit = (170 + quality * 70).toInt()
+        setMaxEngineWeight(ComponentComparator.normalizeChassisEngineLimit(rawLimit))
         setSuspensionType(suspType)
         setPerformance(Random.nextDouble(40.0, 95.0))
     }
@@ -89,7 +92,7 @@ object MarketGenerator {
         val quality = Random.nextDouble(0.5, 1.0)
         setName(listOf("Rammer", "Saw Blade", "Shock Baton").random())
         setPrice(400.0 + Random.nextDouble(1400.0))
-        setWeight((40 + (1.0 - quality) * 80).toInt())
+        setWeight((20 + (1.0 - quality) * 35).toInt())
         setImpact((30 + quality * 70).toInt())
         setAccuracy(0.45 + quality * 0.45)
         setPerformance(Random.nextDouble(5.0, 15.0))
@@ -99,7 +102,7 @@ object MarketGenerator {
         val quality = Random.nextDouble(0.5, 1.0)
         setName(listOf("Pulse Cannon", "EMP Launcher", "Rail Shot").random())
         setPrice(700.0 + Random.nextDouble(2000.0))
-        setWeight((50 + (1.0 - quality) * 90).toInt())
+        setWeight((25 + (1.0 - quality) * 45).toInt())
         setRange((200 + quality * 800).toInt())
         setAccuracy(0.4 + quality * 0.5)
         setPerformance(Random.nextDouble(6.0, 18.0))

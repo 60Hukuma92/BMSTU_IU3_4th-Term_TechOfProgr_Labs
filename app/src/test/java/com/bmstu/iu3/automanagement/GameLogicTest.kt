@@ -220,4 +220,32 @@ class GameLogicTest {
         assertFalse(GameState.getJailedPilots().contains(pilot))
         assertEquals(initialBudget - 1000.0, GameState.getBudgetObject().getAmount(), 0.1)
     }
+
+    @Test
+    fun `balanced mass should allow two melee and one ranged weapon on a car`() {
+        GameState.clearInventory()
+
+        val car = Car().apply {
+            setEngine(Engine().apply { setWeight(80); setType("Bolt-On") })
+            setGearbox(Gearbox().apply { setType("Bolt-On") })
+            setChassis(Chassis().apply { setMaxEngineWeight(220); setSuspensionType("Standard") })
+            setSuspension(Suspension().apply { setType("Standard") })
+            setAerodynamics(Aerodynamics())
+            setTyres(Tyres())
+        }
+
+        GameState.addCar(car)
+
+        val melee1 = MeleeWeapon().apply { setWeight(25) }
+        val melee2 = MeleeWeapon().apply { setWeight(25) }
+        val ranged = RangedWeapon().apply { setWeight(35) }
+
+        GameState.addComponent(melee1)
+        GameState.addComponent(melee2)
+        GameState.addComponent(ranged)
+
+        assertTrue(GameState.installComponentToCar(car, melee1))
+        assertTrue(GameState.installComponentToCar(car, melee2))
+        assertTrue(GameState.installComponentToCar(car, ranged))
+    }
 }

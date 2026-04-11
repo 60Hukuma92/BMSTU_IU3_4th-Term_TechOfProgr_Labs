@@ -45,6 +45,12 @@ fun SetupNavGraph(
                     navController.navigate(Screen.ViewResults.route) {
                         popUpTo(Screen.MainMenu.route)
                     }
+                },
+                saveManager = saveManager,
+                onSurvivalComplete = {
+                    navController.navigate(Screen.ViewResults.route) {
+                        popUpTo(Screen.MainMenu.route)
+                    }
                 }
             )
         }

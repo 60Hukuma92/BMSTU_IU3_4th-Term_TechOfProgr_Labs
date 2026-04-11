@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,15 +14,24 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
+import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
+import com.bmstu.iu3.automanagement.utils.ComponentComparator
+import com.bmstu.iu3.automanagement.utils.DefaultSurvivalRandom
 import com.bmstu.iu3.automanagement.utils.RaceCalculator
 import com.bmstu.iu3.automanagement.utils.RaceCalculator.applyPostRaceConsequences
+import com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
+fun StartRaceScreen(
+    onBack: () -> Unit,
+    onRaceComplete: () -> Unit,
+    saveManager: GameSaveManager,
+    onSurvivalComplete: () -> Unit
+) {
     val pixelFont = FontFamily(Font(press_start2p))
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("CLASSIC", "SURVIVAL")
@@ -44,7 +54,7 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
 
             when (selectedTabIndex) {
                 0 -> ClassicRaceTab(onBack = onBack, onRaceComplete = onRaceComplete)
-                else -> SurvivalTabPlaceholder(onBack = onBack)
+                else -> SurvivalRaceTab(onBack = onBack, saveManager = saveManager, onSurvivalComplete = onSurvivalComplete)
             }
         }
     }
@@ -71,9 +81,7 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedTrack = track },
                     colors = CardDefaults.cardColors(containerColor = if (selectedTrack == track) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Text("${track.getName()} (${track.getLength()} km)", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp)
-                }
+                ) { Text("${track.getName()} (${track.getLength()} km)", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp) }
             }
 
             item { Spacer(Modifier.height(16.dp)); Text("SELECT CAR:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
@@ -81,22 +89,23 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 item { Text("No cars assembled!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
             } else {
                 items(myCars) { car ->
-                    val hasBrokenParts = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+                    val readiness = ComponentComparator.validateCarForRace(car)
+                    val hasIssue = !readiness.isValid
 
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedCar = car },
                         colors = CardDefaults.cardColors(
                             containerColor = when {
                                 selectedCar == car -> MaterialTheme.colorScheme.primaryContainer
-                                hasBrokenParts -> MaterialTheme.colorScheme.errorContainer
+                                hasIssue -> MaterialTheme.colorScheme.errorContainer
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                         )
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
                             Text(car.getName(), fontFamily = pixelFont, fontSize = 8.sp)
-                            if (hasBrokenParts) {
-                                Text("HAS BROKEN PARTS!", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
+                            if (hasIssue) {
+                                Text(readiness.message ?: "CAR IS NOT READY", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
                             }
                         }
                     }
@@ -127,16 +136,16 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val isBroken = selectedCar?.let { car ->
-            listOf(car.getEngine(), car.getGearbox(), car.getChassis(), car.getSuspension(), car.getAerodynamics(), car.getTyres()).any { it?.isDestroyed() == true }
+        val selectedCarValidation = selectedCar?.let { ComponentComparator.validateCarForRace(it) }
+        val isCarReady = selectedCarValidation?.isValid == true
+        val hasHighWear = selectedCar?.let { car ->
+            listOf(car.getEngine(), car.getGearbox(), car.getChassis()).any { (it?.getWear() ?: 0.0) > 0.5 }
         } ?: false
 
         PixelButton(
-            text = if (isBroken) "REPAIR CAR FIRST" else "START RACE",
+            text = if (selectedCar != null && !isCarReady) "CAR NOT READY" else "START RACE",
             onClick = {
-                if (selectedCar != null && selectedTrack != null && selectedPilot != null && !isBroken) {
-                    val hasHighWear = listOf(selectedCar!!.getEngine(), selectedCar!!.getGearbox(), selectedCar!!.getChassis())
-                        .any { (it?.getWear() ?: 0.0) > 0.5 }
+                if (selectedCar != null && selectedTrack != null && selectedPilot != null && isCarReady) {
                     if (hasHighWear) {
                         showWearWarning = true
                     } else {
@@ -145,8 +154,17 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            baseColor = if (selectedCar != null && selectedPilot != null && !isBroken) MaterialTheme.colorScheme.primary else Color.Gray
+            baseColor = if (selectedCar != null && selectedPilot != null && isCarReady) MaterialTheme.colorScheme.primary else Color.Gray
         )
+
+        if (selectedCar != null && !isCarReady) {
+            Text(
+                text = selectedCarValidation?.message ?: "Car is not ready",
+                color = MaterialTheme.colorScheme.error,
+                fontFamily = pixelFont,
+                fontSize = 8.sp
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
         PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
@@ -159,7 +177,10 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                 confirmButton = {
                     Button(onClick = {
                         showWearWarning = false
-                        runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
+                        val isStillValid = ComponentComparator.validateCarForRace(selectedCar!!).isValid
+                        if (isStillValid) {
+                            runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
+                        }
                     }) { Text("RACE ANYWAY") }
                 },
                 dismissButton = {
@@ -171,23 +192,173 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
 }
 
 @Composable
-private fun SurvivalTabPlaceholder(onBack: () -> Unit) {
+private fun SurvivalRaceTab(
+    onBack: () -> Unit,
+    saveManager: GameSaveManager,
+    onSurvivalComplete: () -> Unit
+) {
     val pixelFont = FontFamily(Font(press_start2p))
+    val tracks = GameState.getTracks()
+    val cars = GameState.getAssembledCars()
+    val pilots = GameState.getHiredPilots()
+
+    var selectedTrack by remember { mutableStateOf(tracks.firstOrNull()) }
+    var selectedCar by remember { mutableStateOf<Car?>(null) }
+    var selectedPilot by remember { mutableStateOf<Pilot?>(null) }
+    var selectedTargetIndex by remember { mutableIntStateOf(1) }
+    var engine by remember { mutableStateOf<SurvivalRaceEngine?>(null) }
+    var statusMessage by remember { mutableStateOf("Choose car, pilot and track.") }
+    var finishHandled by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Text(
-                text = "Survival mode setup is coming next. Configure weaponized cars in Garage/Market for now.",
-                modifier = Modifier.padding(12.dp),
-                fontFamily = pixelFont,
-                fontSize = 8.sp
-            )
+        if (engine == null) {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                item { Text("SELECT TRACK:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+                items(tracks) { track ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedTrack = track },
+                        colors = CardDefaults.cardColors(containerColor = if (selectedTrack == track) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                    ) { Text("${track.getName()} (${track.getLength()} km)", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp) }
+                }
+
+                item { Spacer(Modifier.height(12.dp)); Text("SELECT CAR:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+                if (cars.isEmpty()) {
+                    item { Text("No cars assembled!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
+                } else {
+                    items(cars) { car ->
+                        val readiness = ComponentComparator.validateCarForRace(car)
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedCar = car },
+                            colors = CardDefaults.cardColors(containerColor = when {
+                                selectedCar == car -> MaterialTheme.colorScheme.primaryContainer
+                                !readiness.isValid -> MaterialTheme.colorScheme.errorContainer
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            })
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text(car.getName(), fontFamily = pixelFont, fontSize = 8.sp)
+                                if (!readiness.isValid) Text(readiness.message ?: "Not ready", color = Color.Red, fontFamily = pixelFont, fontSize = 6.sp)
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(Modifier.height(12.dp)); Text("SELECT PILOT:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+                if (pilots.isEmpty()) {
+                    item { Text("No pilots hired!", color = MaterialTheme.colorScheme.error, fontFamily = pixelFont, fontSize = 8.sp) }
+                } else {
+                    items(pilots) { pilot ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedPilot = pilot },
+                            colors = CardDefaults.cardColors(containerColor = if (selectedPilot == pilot) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                        ) { Text("${pilot.getName()} (Skill: ${pilot.getSkill()})", modifier = Modifier.padding(8.dp), fontFamily = pixelFont, fontSize = 8.sp) }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PixelButton(text = "SAVE", onClick = { saveManager.saveGame(GameState.getCurrentPlayer()); statusMessage = "Game saved." }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.secondary)
+                PixelButton(
+                    text = "START",
+                    onClick = {
+                        val car = selectedCar
+                        val pilot = selectedPilot
+                        val track = selectedTrack
+                        if (car == null || pilot == null || track == null) {
+                            statusMessage = "Select car, pilot and track."
+                            return@PixelButton
+                        }
+                        val readiness = ComponentComparator.validateCarForRace(car)
+                        if (!readiness.isValid) {
+                            statusMessage = readiness.message ?: "Car is not ready."
+                            return@PixelButton
+                        }
+                        GameState.generateOpponents()
+                        engine = SurvivalRaceEngine(
+                            track = track,
+                            weather = Weather.entries.random(),
+                            playerCar = car,
+                            playerPilot = pilot,
+                            opponents = GameState.getOpponentTeams().take(5),
+                            random = DefaultSurvivalRandom()
+                        )
+                        selectedTargetIndex = 1
+                        finishHandled = false
+                        statusMessage = "Survival race started."
+                    },
+                    modifier = Modifier.weight(1f),
+                    baseColor = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
+        } else {
+            val activeEngine = engine!!
+            val standings = activeEngine.getStandings()
+            if (standings.size > 1 && selectedTargetIndex !in standings.indices) selectedTargetIndex = 1
+            if (selectedTargetIndex == 0 && standings.size > 1) selectedTargetIndex = 1
+
+            Text("ORDER ON TRACK:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                itemsIndexed(standings) { index, competitor ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable { selectedTargetIndex = index },
+                        colors = CardDefaults.cardColors(containerColor = when {
+                            competitor.isPlayer -> MaterialTheme.colorScheme.primaryContainer
+                            index == selectedTargetIndex -> MaterialTheme.colorScheme.tertiaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        })
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text("${index + 1}. ${competitor.name}${if (competitor.isPlayer) " (YOU)" else ""}", fontFamily = pixelFont, fontSize = 8.sp)
+                            Text(String.format(java.util.Locale.US, "Progress: %.1f", competitor.progress), fontFamily = pixelFont, fontSize = 7.sp)
+                        }
+                    }
+                }
+
+                item { Spacer(Modifier.height(8.dp)); Text("LOG:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary) }
+                items(activeEngine.getTurnLogs().takeLast(6)) { log ->
+                    Text(log, fontFamily = pixelFont, fontSize = 7.sp)
+                }
+            }
+
+            if (activeEngine.finished) {
+                Text(
+                    text = if (activeEngine.winnerName == "YOU") "YOU WIN!" else "${activeEngine.winnerName ?: "Nobody"} won.",
+                    fontFamily = pixelFont,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                LaunchedEffect(activeEngine.finished) {
+                    if (!finishHandled) {
+                        GameState.addRaceResult(activeEngine.buildResults())
+                        finishHandled = true
+                        onSurvivalComplete()
+                    }
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PixelButton(text = "ATTACK", onClick = {
+                        val result = activeEngine.performPlayerAttack(selectedTargetIndex)
+                        statusMessage = result.logs.lastOrNull() ?: statusMessage
+                    }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.error)
+                    PixelButton(text = "OVERTAKE", onClick = {
+                        val result = activeEngine.performPlayerOvertake()
+                        statusMessage = result.logs.lastOrNull() ?: statusMessage
+                    }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.tertiary)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PixelButton(text = "SAVE", onClick = { saveManager.saveGame(GameState.getCurrentPlayer()); statusMessage = "Game saved." }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.secondary)
+                    PixelButton(text = "Back", onClick = onBack, modifier = Modifier.weight(1f), baseColor = Color.Gray)
+                }
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
-        PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(text = statusMessage, fontFamily = pixelFont, fontSize = 8.sp, color = MaterialTheme.colorScheme.primary)
     }
 }
 

@@ -23,11 +23,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.models.Car
+import com.bmstu.iu3.automanagement.models.Chassis
 import com.bmstu.iu3.automanagement.models.Component
+import com.bmstu.iu3.automanagement.models.Engine
+import com.bmstu.iu3.automanagement.models.Gearbox
 import com.bmstu.iu3.automanagement.models.MeleeWeapon
 import com.bmstu.iu3.automanagement.models.RangedWeapon
+import com.bmstu.iu3.automanagement.models.Suspension
+import com.bmstu.iu3.automanagement.models.Aerodynamics
+import com.bmstu.iu3.automanagement.models.Tyres
 import com.bmstu.iu3.automanagement.models.Weapon
 import java.util.Locale
+
+fun buildComponentStatsText(component: Component): String {
+    return when (component) {
+        is Engine -> "Power: ${component.getPower()} | Mass: ${component.getWeight()} kg | ${component.getType()}"
+        is Gearbox -> "Type: ${component.getType()}"
+        is Chassis -> "Susp: ${component.getSuspensionType()} | Max mass: ${component.getMaxEngineWeight()} kg"
+        is Suspension -> "Type: ${component.getType()}"
+        is Tyres -> "Grip: ${String.format(Locale.US, "%.2f", component.getGrip())}"
+        is Aerodynamics -> "Perf: ${String.format(Locale.US, "%.1f", component.getPerformance())}"
+        is MeleeWeapon -> "Impact: ${component.getImpact()} | Mass: ${component.getWeight()} kg"
+        is RangedWeapon -> "Range: ${component.getRange()} | Mass: ${component.getWeight()} kg"
+        is Weapon -> "Acc: ${String.format(Locale.US, "%.2f", component.getAccuracy())} | Mass: ${component.getWeight()} kg"
+    }
+}
 
 @Composable
 fun PixelButton(
@@ -126,15 +146,15 @@ fun ComponentCard(component: Component, isSelected: Boolean = false, onClick: ()
                 fontFamily = FontFamily(Font(press_start2p)),
                 fontSize = 8.sp
             )
-            val stats = when (component) {
-                is MeleeWeapon -> "Impact ${component.getImpact()} | W ${component.getWeight()}"
-                is RangedWeapon -> "Range ${component.getRange()} | W ${component.getWeight()}"
-                is Weapon -> "Acc ${String.format(Locale.US, "%.2f", component.getAccuracy())} | W ${component.getWeight()}"
-                else -> null
-            }
-            stats?.let {
+            Text(
+                text = buildComponentStatsText(component),
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily(Font(press_start2p)),
+                fontSize = 8.sp
+            )
+            if (component is Weapon) {
                 Text(
-                    text = it,
+                    text = "Acc: ${String.format(Locale.US, "%.2f", component.getAccuracy())}",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily(Font(press_start2p)),
                     fontSize = 8.sp
@@ -164,15 +184,26 @@ fun CarCard(car: Car) {
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp
             )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("CONDITION:", style = MaterialTheme.typography.labelLarge, fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
-            
-            Column(modifier = Modifier.padding(start = 8.dp, top = 4.dp)) {
-                car.getEngine()?.let { WearIndicator(it.getWear()) }
-                car.getGearbox()?.let { WearIndicator(it.getWear()) }
-                car.getChassis()?.let { WearIndicator(it.getWear()) }
+            val engineMass = car.getEngine()?.getWeight()
+            val chassisLimit = car.getChassis()?.getMaxEngineWeight()
+            if (engineMass != null && chassisLimit != null) {
+                Text(
+                    text = if (chassisLimit <= 0) "Engine mass: ${engineMass}/INVALID" else "Engine mass: ${engineMass}/${chassisLimit} kg",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily(Font(press_start2p)),
+                    fontSize = 8.sp,
+                    color = if (chassisLimit <= 0 || engineMass > chassisLimit) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("COMPONENTS:", style = MaterialTheme.typography.labelLarge, fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
+            CarSlotLine("Engine", car.getEngine())
+            CarSlotLine("Gearbox", car.getGearbox())
+            CarSlotLine("Chassis", car.getChassis())
+            CarSlotLine("Suspension", car.getSuspension())
+            CarSlotLine("Aero", car.getAerodynamics())
+            CarSlotLine("Tyres", car.getTyres())
 
             Spacer(modifier = Modifier.height(8.dp))
             Text("WEAPONS:", style = MaterialTheme.typography.labelLarge, fontFamily = FontFamily(Font(press_start2p)), fontSize = 10.sp)
@@ -182,17 +213,72 @@ fun CarCard(car: Car) {
                 fontFamily = FontFamily(Font(press_start2p)),
                 fontSize = 8.sp
             )
+            car.getMeleeWeapon1()?.let {
+                Text(
+                    text = buildComponentStatsText(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily(Font(press_start2p)),
+                    fontSize = 7.sp
+                )
+            }
             Text(
                 text = "M2: ${car.getMeleeWeapon2()?.getName() ?: "---"}",
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily(Font(press_start2p)),
                 fontSize = 8.sp
             )
+            car.getMeleeWeapon2()?.let {
+                Text(
+                    text = buildComponentStatsText(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily(Font(press_start2p)),
+                    fontSize = 7.sp
+                )
+            }
             Text(
                 text = "R: ${car.getRangedWeapon()?.getName() ?: "---"}",
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily(Font(press_start2p)),
                 fontSize = 8.sp
+            )
+            car.getRangedWeapon()?.let {
+                Text(
+                    text = buildComponentStatsText(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily(Font(press_start2p)),
+                    fontSize = 7.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CarSlotLine(label: String, component: Component?) {
+    val pixelFont = FontFamily(Font(press_start2p))
+
+    Text(
+        text = "$label: ${component?.getName() ?: "---"}",
+        style = MaterialTheme.typography.bodySmall,
+        fontFamily = pixelFont,
+        fontSize = 8.sp,
+        color = if (component == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    )
+
+    component?.let {
+        Text(
+            text = buildComponentStatsText(it),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = pixelFont,
+            fontSize = 7.sp
+        )
+        if (it.isDestroyed()) {
+            Text(
+                text = "DESTROYED",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = pixelFont,
+                fontSize = 7.sp,
+                color = MaterialTheme.colorScheme.error
             )
         }
     }

@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import com.bmstu.iu3.automanagement.data.GameState
+import com.bmstu.iu3.automanagement.utils.ComponentComparator
 
 class GarageViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -88,26 +89,21 @@ class GarageViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        if (engine.getType() != gearbox.getType()) {
-            Toast.makeText(getApplication(), "Engine and Gearbox mismatch (${engine.getType()} vs ${gearbox.getType()})", Toast.LENGTH_SHORT).show()
+        val baseValidation = ComponentComparator.validateAssembly(engine, gearbox, chassis, suspension)
+        if (!baseValidation.isValid) {
+            Toast.makeText(getApplication(), baseValidation.message ?: "Invalid build", Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (engine.getWeight() > chassis.getMaxEngineWeight()) {
-            Toast.makeText(getApplication(), "Engine too heavy for this chassis", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (suspension.getType() != chassis.getSuspensionType()) {
-            Toast.makeText(getApplication(), "Suspension not compatible with chassis (got ${suspension.getType()} required ${chassis.getSuspensionType()})", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val overweightWeapon = listOfNotNull(meleeWeapon1, meleeWeapon2, rangedWeapon)
-            .firstOrNull { it.getWeight() > chassis.getMaxEngineWeight() }
-        if (overweightWeapon != null) {
-            Toast.makeText(getApplication(), "Weapon ${overweightWeapon.getName()} is too heavy for this chassis", Toast.LENGTH_SHORT).show()
-            return
+        val selectedWeapons = listOfNotNull(meleeWeapon1, meleeWeapon2, rangedWeapon)
+        var currentWeaponWeight = 0
+        selectedWeapons.forEach { weapon ->
+            val weaponValidation = ComponentComparator.validateWeaponLoad(chassis, engine, currentWeaponWeight, weapon)
+            if (!weaponValidation.isValid) {
+                Toast.makeText(getApplication(), weaponValidation.message ?: "Invalid weapon load", Toast.LENGTH_SHORT).show()
+                return
+            }
+            currentWeaponWeight += weapon.getWeight()
         }
 
         val newCar = Car().apply {

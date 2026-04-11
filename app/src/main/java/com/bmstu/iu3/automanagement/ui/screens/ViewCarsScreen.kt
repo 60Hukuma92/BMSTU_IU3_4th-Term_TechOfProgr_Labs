@@ -24,6 +24,7 @@ import com.bmstu.iu3.automanagement.models.Car
 import com.bmstu.iu3.automanagement.models.Component
 import com.bmstu.iu3.automanagement.ui.theme.CarCard
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
+import com.bmstu.iu3.automanagement.ui.theme.buildComponentStatsText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +129,10 @@ fun ViewCarsScreen(onBack: () -> Unit) {
 private fun ComponentOnCarRow(car: Car, component: Component) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(component.getName(), style = MaterialTheme.typography.bodySmall)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(component.getName(), style = MaterialTheme.typography.bodySmall)
+                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall)
+            }
             PixelButton(
                 text = "REMOVE",
                 onClick = { GameState.uninstallComponentFromCar(car, component) },
@@ -142,7 +146,10 @@ private fun ComponentOnCarRow(car: Car, component: Component) {
 private fun InventoryInstallRow(car: Car, component: Component) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(component.getName(), style = MaterialTheme.typography.bodySmall)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(component.getName(), style = MaterialTheme.typography.bodySmall)
+                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall)
+            }
             PixelButton(
                 text = "INSTALL",
                 onClick = { GameState.installComponentToCar(car, component) },

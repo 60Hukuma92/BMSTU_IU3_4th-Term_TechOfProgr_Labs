@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.bmstu.iu3.automanagement.models.*
+import com.bmstu.iu3.automanagement.utils.ComponentComparator
 import com.bmstu.iu3.automanagement.utils.MarketGenerator
 import com.bmstu.iu3.automanagement.utils.OpponentGenerator
 
@@ -36,9 +37,7 @@ object GameState {
     }
 
     init {
-        tracks.add(Track().apply { setName("Monza"); setLength(5.79); setStraightsRatio(0.7); setCornersRatio(0.3); setElevationChange(10.0) })
-        tracks.add(Track().apply { setName("Monaco"); setLength(3.33); setStraightsRatio(0.2); setCornersRatio(0.8); setElevationChange(40.0) })
-        tracks.add(Track().apply { setName("Spa"); setLength(7.00); setStraightsRatio(0.5); setCornersRatio(0.5); setElevationChange(100.0) })
+        resetTracksToDefault()
     }
 
     fun getBudgetObject() : Budget = budget.value
@@ -57,8 +56,47 @@ object GameState {
     fun getTracks(): List<Track> = tracks
     fun getRaceHistory(): List<List<RaceResult>> = raceHistory
 
-    fun addCar(car: Car) { assembledCars.add(car) }
-    fun addComponent(component: Component) { ownedComponents.add(component) }
+    fun resetTracksToDefault() {
+        tracks.clear()
+        tracks.addAll(defaultTracks())
+    }
+
+    fun setTracks(newTracks: List<Track>) {
+        tracks.clear()
+        if (newTracks.isEmpty()) {
+            tracks.addAll(defaultTracks())
+        } else {
+            tracks.addAll(newTracks)
+        }
+    }
+
+    fun addTrack(track: Track): Boolean {
+        if (!isTrackValid(track)) return false
+        tracks.add(track)
+        return true
+    }
+
+    fun updateTrack(index: Int, updatedTrack: Track): Boolean {
+        if (index !in tracks.indices || !isTrackValid(updatedTrack)) return false
+        tracks[index] = updatedTrack
+        return true
+    }
+
+    fun removeTrack(index: Int): Boolean {
+        if (index !in tracks.indices || tracks.size <= 1) return false
+        tracks.removeAt(index)
+        return true
+    }
+
+    fun addCar(car: Car) {
+        sanitizeCarMassData(car)
+        assembledCars.add(car)
+    }
+
+    fun addComponent(component: Component) {
+        sanitizeComponentMassData(component)
+        ownedComponents.add(component)
+    }
     fun removeComponentFromInventory(component: Component) { ownedComponents.remove(component) }
     fun removeCar(car: Car) { assembledCars.remove(car) }
 
@@ -71,6 +109,11 @@ object GameState {
                 val chassis = car.getChassis()
                 if (gearbox != null && gearbox.getType() != component.getType()) return false
                 if (chassis != null && component.getWeight() > chassis.getMaxEngineWeight()) return false
+                if (chassis != null) {
+                    val existingWeaponWeight = getCurrentWeaponWeight(car)
+                    val freeCapacity = chassis.getMaxEngineWeight() - component.getWeight()
+                    if (existingWeaponWeight > freeCapacity) return false
+                }
                 car.getEngine()?.let { ownedComponents.add(it) }
                 car.setEngine(component)
                 true
@@ -87,6 +130,9 @@ object GameState {
                 val suspension = car.getSuspension()
                 if (engine != null && engine.getWeight() > component.getMaxEngineWeight()) return false
                 if (suspension != null && suspension.getType() != component.getSuspensionType()) return false
+                val existingWeaponWeight = getCurrentWeaponWeight(car)
+                val freeCapacity = component.getMaxEngineWeight() - (engine?.getWeight() ?: 0)
+                if (existingWeaponWeight > freeCapacity) return false
                 car.getChassis()?.let { ownedComponents.add(it) }
                 car.setChassis(component)
                 true
@@ -153,6 +199,9 @@ object GameState {
         if (removed) {
             ownedComponents.add(component)
             recalculateCarPerformance(car)
+            if (car.getAllInstalledComponents().isEmpty()) {
+                assembledCars.remove(car)
+            }
         }
         return removed
     }
@@ -296,10 +345,51 @@ object GameState {
 
     private fun canInstallWeaponByMass(car: Car, weapon: Weapon): Boolean {
         val chassis = car.getChassis() ?: return false
-        return weapon.getWeight() <= chassis.getMaxEngineWeight()
+        val validation = ComponentComparator.validateWeaponLoad(
+            chassis = chassis,
+            engine = car.getEngine(),
+            currentWeaponWeight = getCurrentWeaponWeight(car),
+            weaponToInstall = weapon
+        )
+        return validation.isValid
+    }
+
+    private fun getCurrentWeaponWeight(car: Car): Int {
+        return listOfNotNull(car.getMeleeWeapon1(), car.getMeleeWeapon2(), car.getRangedWeapon())
+            .sumOf { it.getWeight() }
+    }
+
+    private fun sanitizeComponentMassData(component: Component) {
+        when (component) {
+            is Engine -> component.setWeight(ComponentComparator.normalizeEngineWeight(component.getWeight()))
+            is Chassis -> component.setMaxEngineWeight(ComponentComparator.normalizeChassisEngineLimit(component.getMaxEngineWeight()))
+            else -> Unit
+        }
+    }
+
+    private fun sanitizeCarMassData(car: Car) {
+        car.getEngine()?.let { sanitizeComponentMassData(it) }
+        car.getChassis()?.let { sanitizeComponentMassData(it) }
     }
 
     private fun recalculateCarPerformance(car: Car) {
         car.setPerformance(car.getTotalPerformance())
     }
+
+    private fun defaultTracks(): List<Track> = listOf(
+        Track().apply { setName("Monza"); setLength(5.79); setStraightsRatio(0.7); setCornersRatio(0.3); setElevationChange(10.0) },
+        Track().apply { setName("Monaco"); setLength(3.33); setStraightsRatio(0.2); setCornersRatio(0.8); setElevationChange(40.0) },
+        Track().apply { setName("Spa"); setLength(7.00); setStraightsRatio(0.5); setCornersRatio(0.5); setElevationChange(100.0) }
+    )
+
+    private fun isTrackValid(track: Track): Boolean {
+        val straights = track.getStraightsRatio()
+        val corners = track.getCornersRatio()
+        val ratioSum = straights + corners
+        return track.getName().isNotBlank() &&
+            track.getLength() > 0.0 &&
+            straights in 0.0..1.0 &&
+            corners in 0.0..1.0 &&
+            kotlin.math.abs(ratioSum - 1.0) < 0.001
     }
+}
