@@ -248,4 +248,44 @@ class GameLogicTest {
         assertTrue(GameState.installComponentToCar(car, melee2))
         assertTrue(GameState.installComponentToCar(car, ranged))
     }
+
+    @Test
+    fun `player can attack single bot ahead in survival`() {
+        // deterministic random that always returns 0.0 -> guarantees hits when chance>0
+        val deterministic = object : com.bmstu.iu3.automanagement.utils.SurvivalRandom {
+            override fun nextDouble(): Double = 0.0
+        }
+
+        val track = GameState.getTracks().first()
+
+        val playerCar = Car().apply { setPerformance(100.0) }
+        val playerPilot = Pilot().apply { setSkill(50) }
+        val playerWeapon = RangedWeapon().apply { setName("TestGun"); setAccuracy(0.9); setWeight(10) }
+        playerCar.setRangedWeapon(playerWeapon)
+
+        val opponentCar = Car().apply { setPerformance(80.0) }
+        val opponentPilot = Pilot().apply { setSkill(10) }
+
+        val opponent = OpponentTeam().apply { setName("Bot1"); setCar(opponentCar); setPilot(opponentPilot) }
+
+        val engine = com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine(
+            track = track,
+            weather = Weather.SUNNY,
+            playerCar = playerCar,
+            playerPilot = playerPilot,
+            opponents = listOf(opponent),
+            random = deterministic
+        )
+
+        val standings = engine.getStandings()
+        // find index of the opponent
+        val targetIndex = standings.indexOfFirst { !it.isPlayer }
+        assertTrue("There should be an opponent", targetIndex >= 0)
+
+        val result = engine.performPlayerAttack(targetIndex)
+        // Ensure we did not get invalid target message
+        assertFalse(result.logs.any { it.contains("Invalid target selected", ignoreCase = true) })
+        // Ensure either opponent was hit or at least attack phase processed
+        assertTrue(result.logs.isNotEmpty())
+    }
 }

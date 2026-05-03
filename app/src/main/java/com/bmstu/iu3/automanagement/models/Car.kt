@@ -42,7 +42,7 @@ class Car {
 
     fun getRangedWeapon(): RangedWeapon? = rangedWeapon
     fun setRangedWeapon(value: RangedWeapon?) { rangedWeapon = value }
-
+    
     fun getPerformance(): Double = performance
     fun setPerformance(value: Double) { performance = value }
 

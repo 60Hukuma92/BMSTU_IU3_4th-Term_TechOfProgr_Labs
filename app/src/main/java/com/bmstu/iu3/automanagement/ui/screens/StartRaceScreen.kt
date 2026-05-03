@@ -201,11 +201,14 @@ private fun SurvivalRaceTab(
     val tracks = GameState.getTracks()
     val cars = GameState.getAssembledCars()
     val pilots = GameState.getHiredPilots()
+    val currentPlayer = GameState.getCurrentPlayer()
 
     var selectedTrack by remember { mutableStateOf(tracks.firstOrNull()) }
     var selectedCar by remember { mutableStateOf<Car?>(null) }
     var selectedPilot by remember { mutableStateOf<Pilot?>(null) }
     var selectedTargetIndex by remember { mutableIntStateOf(1) }
+    var selectedTargetName by remember { mutableStateOf<String?>(null) }
+    var availableCompromisingEvidence by remember(currentPlayer) { mutableStateOf(saveManager.getCompromisingEvidenceForPlayer(currentPlayer)) }
     var engine by remember { mutableStateOf<SurvivalRaceEngine?>(null) }
     var statusMessage by remember { mutableStateOf("Choose car, pilot and track.") }
     var finishHandled by remember { mutableStateOf(false) }
@@ -283,7 +286,16 @@ private fun SurvivalRaceTab(
                             opponents = GameState.getOpponentTeams().take(5),
                             random = DefaultSurvivalRandom()
                         )
-                        selectedTargetIndex = 1
+                        // initialize selected target to first opponent if exists
+                        val initStandings = engine?.getStandings() ?: listOf()
+                        val firstOpponent = initStandings.indexOfFirst { !it.isPlayer }
+                        if (firstOpponent >= 0) {
+                            selectedTargetIndex = firstOpponent
+                            selectedTargetName = initStandings[firstOpponent].name
+                        } else {
+                            selectedTargetIndex = 0
+                            selectedTargetName = initStandings.getOrNull(0)?.name
+                        }
                         finishHandled = false
                         statusMessage = "Survival race started."
                     },
@@ -291,19 +303,45 @@ private fun SurvivalRaceTab(
                     baseColor = MaterialTheme.colorScheme.primary
                 )
             }
+
+            if (availableCompromisingEvidence != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "COMPROMISING EVIDENCE READY: -${availableCompromisingEvidence!!.getPushBackValue()}",
+                    fontFamily = pixelFont,
+                    fontSize = 8.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             PixelButton(text = "Back", onClick = onBack, modifier = Modifier.fillMaxWidth(), baseColor = Color.Gray)
         } else {
             val activeEngine = engine!!
             val standings = activeEngine.getStandings()
-            if (standings.size > 1 && selectedTargetIndex !in standings.indices) selectedTargetIndex = 1
-            if (selectedTargetIndex == 0 && standings.size > 1) selectedTargetIndex = 1
+            // Keep selectedTargetName in sync: if name is null or not present, pick first opponent
+            val firstOpponentIndex = standings.indexOfFirst { !it.isPlayer }
+            if (selectedTargetName == null || standings.none { it.name == selectedTargetName && it.alive && !it.isPlayer }) {
+                if (firstOpponentIndex >= 0) {
+                    selectedTargetIndex = firstOpponentIndex
+                    selectedTargetName = standings[firstOpponentIndex].name
+                } else {
+                    selectedTargetIndex = 0
+                    selectedTargetName = standings.getOrNull(0)?.name
+                }
+            } else {
+                // Keep index synchronized with name
+                val idx = standings.indexOfFirst { it.name == selectedTargetName }
+                if (idx >= 0) selectedTargetIndex = idx
+            }
 
             Text("ORDER ON TRACK:", fontFamily = pixelFont, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
             LazyColumn(modifier = Modifier.weight(1f)) {
                 itemsIndexed(standings) { index, competitor ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable { selectedTargetIndex = index },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clickable {
+                            selectedTargetIndex = index
+                            selectedTargetName = competitor.name
+                        },
                         colors = CardDefaults.cardColors(containerColor = when {
                             competitor.isPlayer -> MaterialTheme.colorScheme.primaryContainer
                             index == selectedTargetIndex -> MaterialTheme.colorScheme.tertiaryContainer
@@ -333,6 +371,13 @@ private fun SurvivalRaceTab(
                 LaunchedEffect(activeEngine.finished) {
                     if (!finishHandled) {
                         GameState.addRaceResult(activeEngine.buildResults())
+                        if (activeEngine.winnerName == "YOU") {
+                            val awardedEvidence = saveManager.awardCompromisingEvidenceToCurrentPlayer()
+                            availableCompromisingEvidence = awardedEvidence
+                            statusMessage = awardedEvidence?.let {
+                                "Compromising evidence awarded: -${it.getPushBackValue()}"
+                            } ?: statusMessage
+                        }
                         finishHandled = true
                         onSurvivalComplete()
                     }
@@ -340,13 +385,57 @@ private fun SurvivalRaceTab(
             } else {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PixelButton(text = "ATTACK", onClick = {
-                        val result = activeEngine.performPlayerAttack(selectedTargetIndex)
-                        statusMessage = result.logs.lastOrNull() ?: statusMessage
+                        // Resolve target index by name to avoid index-shift issues
+                        val curStandings = activeEngine.getStandings()
+                        val resolvedIndex = selectedTargetName?.let { name ->
+                            curStandings.indexOfFirst { it.name == name && it.alive && !it.isPlayer }
+                        } ?: -1
+                        val targetIndexToUse = if (resolvedIndex >= 0) resolvedIndex else curStandings.indexOfFirst { !it.isPlayer }
+                        if (targetIndexToUse < 0) {
+                            statusMessage = "No valid targets."
+                        } else {
+                            val result = activeEngine.performPlayerAttack(targetIndexToUse)
+                            statusMessage = result.logs.lastOrNull() ?: statusMessage
+                        }
                     }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.error)
                     PixelButton(text = "OVERTAKE", onClick = {
-                        val result = activeEngine.performPlayerOvertake()
-                        statusMessage = result.logs.lastOrNull() ?: statusMessage
+                        val curStandings = activeEngine.getStandings()
+                        val playerIdx = curStandings.indexOfFirst { it.isPlayer }
+                        if (playerIdx < 0) {
+                            statusMessage = "Player state not found."
+                        } else if (playerIdx == 0) {
+                            // Player already in front -- engine will handle bonus
+                            val result = activeEngine.performPlayerOvertake()
+                            statusMessage = result.logs.lastOrNull() ?: statusMessage
+                        } else {
+                            val target = curStandings[playerIdx - 1]
+                            statusMessage = "Attempting to overtake ${target.name}..."
+                            val result = activeEngine.performPlayerOvertake()
+                            // show engine result (overtook or failed)
+                            statusMessage = result.logs.lastOrNull() ?: statusMessage
+                        }
                     }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.tertiary)
+                    PixelButton(text = if (availableCompromisingEvidence != null) "USE EVIDENCE" else "NO EVIDENCE", onClick = {
+                        val evidence = availableCompromisingEvidence
+                        if (evidence == null) {
+                            statusMessage = "No compromising evidence available."
+                            return@PixelButton
+                        }
+
+                        val curStandings = activeEngine.getStandings()
+                        val resolvedIndex = selectedTargetName?.let { name ->
+                            curStandings.indexOfFirst { it.name == name && it.alive && !it.isPlayer }
+                        } ?: -1
+                        val targetIndexToUse = if (resolvedIndex >= 0) resolvedIndex else curStandings.indexOfFirst { !it.isPlayer }
+                        if (targetIndexToUse < 0) {
+                            statusMessage = "No valid targets."
+                        } else {
+                            val result = activeEngine.performPlayerCompromisingEvidence(targetIndexToUse, evidence.getPushBackValue())
+                            statusMessage = result.logs.lastOrNull() ?: statusMessage
+                            saveManager.consumeCompromisingEvidenceForPlayer(currentPlayer)
+                            availableCompromisingEvidence = null
+                        }
+                    }, modifier = Modifier.weight(1f), baseColor = MaterialTheme.colorScheme.secondary)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

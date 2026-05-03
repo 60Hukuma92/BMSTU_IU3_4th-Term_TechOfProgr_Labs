@@ -1,10 +1,14 @@
 package com.bmstu.iu3.automanagement
 
+import android.content.Context
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.data.GameState
-import com.bmstu.iu3.automanagement.models.Track
+import com.bmstu.iu3.automanagement.models.*
+import com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine
+import com.bmstu.iu3.automanagement.utils.SurvivalRandom
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -14,10 +18,11 @@ import org.junit.runner.RunWith
 class PlayerSaveSystemTest {
 
     private lateinit var saveManager: GameSaveManager
+    private lateinit var context: Context
 
     @Before
     fun setup() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context = InstrumentationRegistry.getInstrumentation().targetContext
         saveManager = GameSaveManager(context)
         saveManager.getAllPlayers().forEach { player ->
             saveManager.deleteGame(player)
@@ -128,6 +133,102 @@ class PlayerSaveSystemTest {
             "Custom track should be restored from save",
             GameState.getTracks().any { it.getName() == "Player Circuit" }
         )
+    }
+
+    @Test
+    fun testCompromisingEvidenceRoundTripAndEncryption() {
+        val playerName = "EvidencePlayer"
+        saveManager.createNewGame(playerName)
+
+        val awarded = saveManager.awardCompromisingEvidenceToPlayer(playerName, 11)
+        assertNotNull("Compromising evidence should be awarded", awarded)
+        assertEquals(playerName, awarded!!.getPlayerName())
+        assertEquals(11, awarded.getPushBackValue())
+
+        val loaded = saveManager.getCompromisingEvidenceForPlayer(playerName)
+        assertNotNull("Compromising evidence should be loadable", loaded)
+        assertEquals(playerName, loaded!!.getPlayerName())
+        assertEquals(11, loaded.getPushBackValue())
+
+        val rawKey = "compromisingEvidence_" + Base64.encodeToString(
+            playerName.toByteArray(Charsets.UTF_8),
+            Base64.NO_WRAP or Base64.URL_SAFE
+        )
+        val rawValue = context.getSharedPreferences("compromising_evidence_store", Context.MODE_PRIVATE)
+            .getString(rawKey, null)
+
+        assertNotNull("Encrypted payload should be stored", rawValue)
+        val storedValue = rawValue.orEmpty()
+        assertFalse(storedValue.contains(playerName))
+        assertFalse(storedValue.contains("<compromisingEvidence>"))
+        assertFalse(storedValue.contains("pushBackValue"))
+    }
+
+    @Test
+    fun testCompromisingEvidenceRemovedWithProfile() {
+        val playerName = "DeleteEvidencePlayer"
+        saveManager.createNewGame(playerName)
+
+        saveManager.awardCompromisingEvidenceToPlayer(playerName, 8)
+        assertTrue(saveManager.hasCompromisingEvidenceForPlayer(playerName))
+
+        saveManager.deleteGame(playerName)
+
+        assertFalse(saveManager.gameExists(playerName))
+        assertFalse(saveManager.hasCompromisingEvidenceForPlayer(playerName))
+    }
+
+    @Test
+    fun testCompromisingEvidenceActionWorksInSurvivalRace() {
+        val playerCar = Car().apply {
+            setName("Player Car")
+            setPerformance(250.0)
+        }
+        val playerPilot = Pilot().apply {
+            setName("Player Pilot")
+            setSkill(40)
+            setSalary(0.0)
+        }
+        val botCar = Car().apply {
+            setName("Bot Car")
+            setPerformance(350.0)
+        }
+        val botPilot = Pilot().apply {
+            setName("Bot Pilot")
+            setSkill(55)
+            setSalary(0.0)
+        }
+        val opponent = OpponentTeam().apply {
+            setName("Bot Team")
+            setCar(botCar)
+            setPilot(botPilot)
+        }
+        val track = Track().apply {
+            setName("Test Track")
+            setLength(5.0)
+            setStraightsRatio(0.6)
+            setCornersRatio(0.4)
+            setElevationChange(12.0)
+        }
+
+        val engine = SurvivalRaceEngine(
+            track = track,
+            weather = Weather.SUNNY,
+            playerCar = playerCar,
+            playerPilot = playerPilot,
+            opponents = listOf(opponent),
+            random = object : SurvivalRandom {
+                override fun nextDouble(): Double = 1.0
+            }
+        )
+
+        val targetIndex = engine.getStandings().indexOfFirst { !it.isPlayer }
+        assertTrue(targetIndex >= 0)
+
+        val result = engine.performPlayerCompromisingEvidence(targetIndex, 7)
+
+        assertTrue(result.logs.any { it.contains("used compromising evidence") })
+        assertTrue(result.logs.any { it.contains("Turn 1 completed after compromising evidence.") })
     }
 }
 

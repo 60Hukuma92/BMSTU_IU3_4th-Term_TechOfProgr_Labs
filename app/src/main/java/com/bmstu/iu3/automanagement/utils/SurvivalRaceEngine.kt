@@ -114,11 +114,16 @@ class SurvivalRaceEngine(
 
         val standings = getStandings()
         if (targetIndex !in standings.indices) {
+            // Detailed debug info to help trace invalid selections coming from UI index mismatches
+            val names = standings.mapIndexed { i, s -> "$i:${s.name}${if (s.isPlayer) "(YOU)" else ""}${if (!s.alive) "[dead]" else ""}" }
+            turnLogs.add("Invalid target selected: index=$targetIndex, standings=${names.joinToString(", ")}")
             return appendAndAdvance("Invalid target selected.")
         }
 
         val target = standings[targetIndex]
         if (target.isPlayer || !target.alive) {
+            val names = standings.mapIndexed { i, s -> "$i:${s.name}${if (s.isPlayer) "(YOU)" else ""}${if (!s.alive) "[dead]" else ""}" }
+            turnLogs.add("Invalid target chosen: index=$targetIndex, target=${target.name}, isPlayer=${target.isPlayer}, alive=${target.alive}, standings=${names.joinToString(", ")}")
             return appendAndAdvance("Invalid target selected.")
         }
 
@@ -155,6 +160,28 @@ class SurvivalRaceEngine(
         }
 
         return resolveTurn("attack")
+    }
+
+    fun performPlayerCompromisingEvidence(targetIndex: Int, pushBackValue: Int): SurvivalTurnResult {
+        if (finished) return snapshotResult()
+
+        val standings = getStandings()
+        if (targetIndex !in standings.indices) {
+            turnLogs.add("Invalid target selected for compromising evidence.")
+            return appendAndAdvance("Invalid target selected.")
+        }
+
+        val target = standings[targetIndex]
+        if (target.isPlayer || !target.alive) {
+            turnLogs.add("Invalid target selected for compromising evidence: ${target.name}.")
+            return appendAndAdvance("Invalid target selected.")
+        }
+
+        val actualPushBack = pushBackValue.coerceAtLeast(0).toDouble()
+        target.progress = max(0.0, target.progress - actualPushBack)
+        turnLogs.add("YOU used compromising evidence against ${target.name}, pushing them back by ${formatProgress(actualPushBack)}.")
+
+        return resolveTurn("compromising evidence")
     }
 
     fun performPlayerOvertake(): SurvivalTurnResult {

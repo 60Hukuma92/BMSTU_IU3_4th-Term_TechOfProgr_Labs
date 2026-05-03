@@ -6,10 +6,13 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.utils.ComponentComparator
+import kotlin.random.Random
 
 class GameSaveManager(context: Context) {
+    private val appContext = context.applicationContext
     private val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("game_saves", Context.MODE_PRIVATE)
+        appContext.getSharedPreferences("game_saves", Context.MODE_PRIVATE)
+    private val compromisingEvidenceStore = CompromisingEvidenceSecureStore(appContext)
 
     private val gson: Gson = GsonBuilder()
         .setPrettyPrinting()
@@ -137,6 +140,20 @@ class GameSaveManager(context: Context) {
         return if (current.isNullOrEmpty()) null else current
     }
 
+    fun awardCompromisingEvidenceToPlayer(playerName: String, pushBackValue: Int = Random.nextInt(5, 16)): CompromisingEvidence? {
+        return compromisingEvidenceStore.awardCompromisingEvidence(playerName, pushBackValue)
+    }
+
+    fun awardCompromisingEvidenceToCurrentPlayer(pushBackValue: Int = Random.nextInt(5, 16)): CompromisingEvidence? {
+        return getCurrentPlayer()?.let { awardCompromisingEvidenceToPlayer(it, pushBackValue) }
+    }
+
+    fun getCompromisingEvidenceForPlayer(playerName: String): CompromisingEvidence? = compromisingEvidenceStore.loadCompromisingEvidence(playerName)
+
+    fun consumeCompromisingEvidenceForPlayer(playerName: String): CompromisingEvidence? = compromisingEvidenceStore.consumeCompromisingEvidence(playerName)
+
+    fun hasCompromisingEvidenceForPlayer(playerName: String): Boolean = compromisingEvidenceStore.hasCompromisingEvidence(playerName)
+
     fun deleteGame(playerName: String): Boolean {
         return try {
             sharedPreferences.edit().apply {
@@ -148,6 +165,7 @@ class GameSaveManager(context: Context) {
                     putString("current_player", "")
                 }
             }.apply()
+            compromisingEvidenceStore.deleteCompromisingEvidence(playerName)
             true
         } catch (_: Exception) {
             false
