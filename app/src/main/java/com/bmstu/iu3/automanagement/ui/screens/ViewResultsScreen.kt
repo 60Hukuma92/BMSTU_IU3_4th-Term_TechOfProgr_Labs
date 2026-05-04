@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.models.RaceResult
+import java.util.Locale
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +93,7 @@ fun ResultCard(result: RaceResult, font: FontFamily) {
                 )
                 if (result.getPrizeMoney() > 0) {
                     Text(
-                        text = "+${String.format("%.2f", result.getPrizeMoney())} $",
+                        text = "+${String.format(Locale.US, "%.2f", result.getPrizeMoney())} $",
                         fontFamily = font,
                         fontSize = 8.sp,
                         color = Color(0xFF4CAF50)
@@ -102,3 +103,5 @@ fun ResultCard(result: RaceResult, font: FontFamily) {
         }
     }
 }
+
+

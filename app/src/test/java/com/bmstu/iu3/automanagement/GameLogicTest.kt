@@ -252,7 +252,7 @@ class GameLogicTest {
     @Test
     fun `player can attack single bot ahead in survival`() {
         // deterministic random that always returns 0.0 -> guarantees hits when chance>0
-        val deterministic = object : com.bmstu.iu3.automanagement.utils.SurvivalRandom {
+        val deterministic = object : com.bmstu.iu3.automanagement.survival.SurvivalRandom {
             override fun nextDouble(): Double = 0.0
         }
 
@@ -268,7 +268,7 @@ class GameLogicTest {
 
         val opponent = OpponentTeam().apply { setName("Bot1"); setCar(opponentCar); setPilot(opponentPilot) }
 
-        val engine = com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine(
+        val engine = com.bmstu.iu3.automanagement.survival.SurvivalRaceEngine(
             track = track,
             weather = Weather.SUNNY,
             playerCar = playerCar,

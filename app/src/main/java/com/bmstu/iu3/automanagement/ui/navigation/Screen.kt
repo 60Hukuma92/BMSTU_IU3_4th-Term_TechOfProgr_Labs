@@ -4,6 +4,7 @@ sealed class Screen(val route: String, val title: String) {
     object PlayerSelection : Screen("player_selection", "Select Player")
     object MainMenu : Screen("main_menu", "Main Menu")
     object StartRace : Screen("start_race", "Start Race")
+    object RaceProgress : Screen("race_progress", "Race Progress")
     object BuyComponents : Screen("buy_components", "Buy Components")
     object Garage : Screen("garage", "Garage")
     object HireEngineers : Screen("hire_engineers", "Hire Engineers")

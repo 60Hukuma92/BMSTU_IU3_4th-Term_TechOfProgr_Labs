@@ -21,6 +21,7 @@ object GameState {
 
     private val tracks = mutableStateListOf<Track>()
     private val raceHistory = mutableStateListOf<List<RaceResult>>()
+    private val lastRaceCommentary = mutableStateListOf<CommentatorMessage>()
 
     private val marketComponents = mutableStateListOf<Component>().apply {
         addAll(MarketGenerator.generateInitialMarket())
@@ -55,6 +56,7 @@ object GameState {
     fun getOpponentTeams(): List<OpponentTeam> = opponentTeams
     fun getTracks(): List<Track> = tracks
     fun getRaceHistory(): List<List<RaceResult>> = raceHistory
+    fun getLastRaceCommentary(): List<CommentatorMessage> = lastRaceCommentary
 
     fun resetTracksToDefault() {
         tracks.clear()
@@ -219,6 +221,7 @@ object GameState {
         hiredEngineers.clear()
         jailedPilots.clear()
         raceHistory.clear()
+        lastRaceCommentary.clear()
     }
     
     fun addPilotDirectly(pilot: Pilot) { hiredPilots.add(pilot) }
@@ -323,6 +326,11 @@ object GameState {
 
     fun addRaceResult(results: List<RaceResult>) {
         raceHistory.add(0, results)
+    }
+
+    fun addRaceCommentary(messages: List<CommentatorMessage>) {
+        lastRaceCommentary.clear()
+        lastRaceCommentary.addAll(messages)
     }
 
     fun addMoney(amount: Double) {

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import java.util.Locale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bmstu.iu3.automanagement.R.font.press_start2p
@@ -18,17 +19,16 @@ import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.models.*
 import com.bmstu.iu3.automanagement.ui.theme.PixelButton
+import com.bmstu.iu3.automanagement.race.ClassicRaceSessionStore
 import com.bmstu.iu3.automanagement.utils.ComponentComparator
-import com.bmstu.iu3.automanagement.utils.DefaultSurvivalRandom
-import com.bmstu.iu3.automanagement.utils.RaceCalculator
-import com.bmstu.iu3.automanagement.utils.RaceCalculator.applyPostRaceConsequences
-import com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine
+import com.bmstu.iu3.automanagement.survival.DefaultSurvivalRandom
+import com.bmstu.iu3.automanagement.survival.SurvivalRaceEngine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartRaceScreen(
     onBack: () -> Unit,
-    onRaceComplete: () -> Unit,
+    onClassicRaceStart: () -> Unit,
     saveManager: GameSaveManager,
     onSurvivalComplete: () -> Unit
 ) {
@@ -53,7 +53,7 @@ fun StartRaceScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             when (selectedTabIndex) {
-                0 -> ClassicRaceTab(onBack = onBack, onRaceComplete = onRaceComplete)
+                0 -> ClassicRaceTab(onBack = onBack, onClassicRaceStart = onClassicRaceStart)
                 else -> SurvivalRaceTab(onBack = onBack, saveManager = saveManager, onSurvivalComplete = onSurvivalComplete)
             }
         }
@@ -61,7 +61,7 @@ fun StartRaceScreen(
 }
 
 @Composable
-private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
+private fun ClassicRaceTab(onBack: () -> Unit, onClassicRaceStart: () -> Unit) {
     val pixelFont = FontFamily(Font(press_start2p))
 
     val tracks = GameState.getTracks()
@@ -143,13 +143,18 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
         } ?: false
 
         PixelButton(
-            text = if (selectedCar != null && !isCarReady) "CAR NOT READY" else "START RACE",
+            text = when {
+                selectedCar != null && !isCarReady -> "CAR NOT READY"
+                else -> "START RACE"
+            },
             onClick = {
                 if (selectedCar != null && selectedTrack != null && selectedPilot != null && isCarReady) {
                     if (hasHighWear) {
                         showWearWarning = true
                     } else {
-                        runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
+                        if (ClassicRaceSessionStore.startClassicRace(selectedCar!!, selectedPilot!!, selectedTrack!!, weather)) {
+                            onClassicRaceStart()
+                        }
                     }
                 }
             },
@@ -179,7 +184,9 @@ private fun ClassicRaceTab(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                         showWearWarning = false
                         val isStillValid = ComponentComparator.validateCarForRace(selectedCar!!).isValid
                         if (isStillValid) {
-                            runRaceSimulation(selectedCar!!, selectedPilot!!, selectedTrack!!, weather, onRaceComplete)
+                            if (ClassicRaceSessionStore.startClassicRace(selectedCar!!, selectedPilot!!, selectedTrack!!, weather)) {
+                                onClassicRaceStart()
+                            }
                         }
                     }) { Text("RACE ANYWAY") }
                 },
@@ -350,7 +357,7 @@ private fun SurvivalRaceTab(
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
                             Text("${index + 1}. ${competitor.name}${if (competitor.isPlayer) " (YOU)" else ""}", fontFamily = pixelFont, fontSize = 8.sp)
-                            Text(String.format(java.util.Locale.US, "Progress: %.1f", competitor.progress), fontFamily = pixelFont, fontSize = 7.sp)
+                            Text(String.format(Locale.US, "Progress: %.1f", competitor.progress), fontFamily = pixelFont, fontSize = 7.sp)
                         }
                     }
                 }
@@ -451,44 +458,3 @@ private fun SurvivalRaceTab(
     }
 }
 
-private fun runRaceSimulation(car: Car, pilot: Pilot, track: Track, weather: Weather, onComplete: () -> Unit) {
-    GameState.generateOpponents()
-    val opponents = GameState.getOpponentTeams()
-    val results = mutableListOf<RaceResult>()
-    
-    // Player
-    val playerIncident = RaceCalculator.checkIncident(car, pilot, track, weather)
-    val playerTime = if (playerIncident?.getSeverity() == "Terminal") 999999.0 else RaceCalculator.calculateRaceTime(car, pilot, track, weather)
-    results.add(RaceResult().apply { setTeamName("YOU"); setTime(playerTime); setIncident(playerIncident) })
-    
-    // ПРИМЕНЯЕМ ЭФФЕКТ ШТРАФА
-    if (playerIncident?.getReason() == "Speeding Fine") {
-        pilot.setFineAmount(playerIncident.getFineAmount())
-        pilot.setFineDeadline(3)
-    }
-
-    // AI
-    opponents.forEach { team ->
-        val opIncident = RaceCalculator.checkIncident(team.getCar()!!, team.getPilot()!!, track, weather)
-        val opTime = if (opIncident?.getSeverity() == "Terminal") 999999.0 else RaceCalculator.calculateRaceTime(team.getCar()!!, team.getPilot()!!, track, weather)
-        results.add(RaceResult().apply { setTeamName(team.getName()); setTime(opTime); setIncident(opIncident) })
-    }
-    
-    results.sortBy { it.getTime() }
-    results.forEachIndexed { index, res -> 
-        res.setPosition(index + 1)
-        if (res.getTeamName() == "YOU") {
-            val prize = when(index) { 0 -> 5000.0; 1 -> 3000.0; 2 -> 1500.0; else -> 0.0 }
-            res.setPrizeMoney(prize)
-            GameState.addMoney(prize)
-        }
-    }
-    
-    applyPostRaceConsequences(car, playerIncident)
-    GameState.addRaceResult(results)
-    
-    // ОБНОВЛЯЕМ СОСТОЯНИЕ (Штрафы и Тюрьму)
-    GameState.processRaceEndUpdates()
-    
-    onComplete()
-}

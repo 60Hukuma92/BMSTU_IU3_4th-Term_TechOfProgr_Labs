@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package com.bmstu.iu3.automanagement.data
 
 import android.util.Xml

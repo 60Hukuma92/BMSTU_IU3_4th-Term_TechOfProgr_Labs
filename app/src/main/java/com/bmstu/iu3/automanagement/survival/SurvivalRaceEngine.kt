@@ -1,4 +1,4 @@
-package com.bmstu.iu3.automanagement.utils
+package com.bmstu.iu3.automanagement.survival
 
 import com.bmstu.iu3.automanagement.models.Car
 import com.bmstu.iu3.automanagement.models.MeleeWeapon
@@ -7,8 +7,8 @@ import com.bmstu.iu3.automanagement.models.Pilot
 import com.bmstu.iu3.automanagement.models.RaceResult
 import com.bmstu.iu3.automanagement.models.RangedWeapon
 import com.bmstu.iu3.automanagement.models.Track
-import com.bmstu.iu3.automanagement.models.Weapon
 import com.bmstu.iu3.automanagement.models.Weather
+import com.bmstu.iu3.automanagement.models.Weapon
 import kotlin.math.max
 import kotlin.random.Random
 import java.util.Locale
@@ -114,7 +114,6 @@ class SurvivalRaceEngine(
 
         val standings = getStandings()
         if (targetIndex !in standings.indices) {
-            // Detailed debug info to help trace invalid selections coming from UI index mismatches
             val names = standings.mapIndexed { i, s -> "$i:${s.name}${if (s.isPlayer) "(YOU)" else ""}${if (!s.alive) "[dead]" else ""}" }
             turnLogs.add("Invalid target selected: index=$targetIndex, standings=${names.joinToString(", ")}")
             return appendAndAdvance("Invalid target selected.")
@@ -421,6 +420,4 @@ class SurvivalRaceEngine(
 
     private fun formatProgress(value: Double): String = String.format(java.util.Locale.US, "%.1f", value)
 }
-
-
 

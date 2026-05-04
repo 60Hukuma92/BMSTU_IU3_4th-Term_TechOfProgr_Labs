@@ -74,3 +74,21 @@ data class GameStateSaveData(
     val timestamp: Long
 )
 
+
+data class TacticSaveData(
+    val id: String,
+    val name: String,
+    val description: String = "",
+    val weatherModifiers: Map<String, Double> = emptyMap()
+)
+
+data class RaceSessionSaveData(
+    val sessionId: String,
+    val trackId: String,
+    val players: List<String> = emptyList(),
+    val startTimeMs: Long,
+    val endTimeMs: Long? = null,
+    val events: List<RaceResultSaveData> = emptyList(),
+    val tacticId: String? = null,
+    val pitStopsUsed: List<String> = emptyList()
+)

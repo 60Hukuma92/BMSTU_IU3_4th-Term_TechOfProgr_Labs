@@ -7,8 +7,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.bmstu.iu3.automanagement.data.GameSaveManager
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.models.*
-import com.bmstu.iu3.automanagement.utils.SurvivalRaceEngine
-import com.bmstu.iu3.automanagement.utils.SurvivalRandom
+import com.bmstu.iu3.automanagement.survival.SurvivalRaceEngine
+import com.bmstu.iu3.automanagement.survival.SurvivalRandom
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
