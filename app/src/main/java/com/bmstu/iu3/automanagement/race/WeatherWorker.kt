@@ -15,6 +15,7 @@ class WeatherWorker(
     override val id: String = "weather"
     @Volatile
     private var active: Boolean = true
+    private var lastWeatherCode: String? = null
 
     override suspend fun start() {
         var tick = 0
@@ -22,6 +23,8 @@ class WeatherWorker(
             delay((tickDelayMs * 3).coerceAtLeast(1L))
             tick += 3
             val (code, multiplier) = randomWeather()
+            if (code == lastWeatherCode) continue
+            lastWeatherCode = code
             eventChannel.trySend(
                 RaceDelta.WeatherChanged(
                     tick = tick,
@@ -40,8 +43,8 @@ class WeatherWorker(
         return when (random.nextInt(4)) {
             0 -> "SUNNY" to 1.00
             1 -> "CLOUDY" to 0.98
-            2 -> "RAIN" to 0.93
-            else -> "WIND" to 0.96
+            2 -> "RAINY" to 0.93
+            else -> "STORM" to 0.85
         }
     }
 }

@@ -4,10 +4,6 @@ import com.bmstu.iu3.automanagement.models.PitStopBox
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Простая реализация IPitStopManager с немедленным захватом/освобождением боксов.
- * Не блокирует — возвращает false если нет свободных мест.
- */
 class SemaphorePitStopManager(private val boxes: List<PitStopBox>) : PitStopManager {
     private val capacity: Int = boxes.sumOf { it.capacity }
     private val occupied = AtomicInteger(0)

@@ -19,6 +19,7 @@ import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 fun ViewStatsScreen(onBack: () -> Unit) {
     val pixelFont = FontFamily(Font(press_start2p))
     val raceHistory = GameState.getRaceHistory()
+    val playerName = GameState.getCurrentPlayer()
 
     Scaffold(
         topBar = {
@@ -38,7 +39,7 @@ fun ViewStatsScreen(onBack: () -> Unit) {
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(raceHistory) { results ->
-                        val playerResult = results.find { it.getTeamName() == "YOU" }
+                        val playerResult = results.find { it.getTeamName() == playerName } ?: results.find { it.getTeamName() == "YOU" }
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)

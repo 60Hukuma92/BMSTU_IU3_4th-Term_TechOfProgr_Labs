@@ -38,8 +38,6 @@ object ClassicRaceSessionStore {
     val state: StateFlow<State> = _state.asStateFlow()
     private var currentJob: Job? = null
     private val running = AtomicBoolean(false)
-    // map from internal participant id (e.g. "car-1") -> display name (e.g. "YOU" or opponent name)
-    private var participantIdToDisplayName: Map<String, String> = emptyMap()
 
     fun startClassicRace(car: Car, pilot: Pilot, track: Track, weather: Weather): Boolean {
         if (!running.compareAndSet(false, true)) return false
@@ -65,8 +63,6 @@ object ClassicRaceSessionStore {
             add("YOU")
             addAll(opponents.map { it.getName() })
         }
-        // prepare mapping for nicer log output (car-1 -> displayName)
-        participantIdToDisplayName = participantNames.mapIndexed { idx, name -> "car-${idx + 1}" to name }.toMap()
         val pilotSkillsByName = buildMap {
             put("YOU", pilot.getSkill())
             opponents.forEach { team ->
@@ -80,41 +76,28 @@ object ClassicRaceSessionStore {
                 put(team.getName(), maxOf(opponentCar?.getPerformance() ?: 0.0, opponentCar?.getTotalPerformance() ?: 0.0))
             }
         }
-        val trackDifficulty = (
-            track.getCornersRatio() * 0.6 +
-                (track.getElevationChange() / 120.0).coerceIn(0.0, 1.0) * 0.4
-            ).coerceIn(0.0, 1.0)
-        val weatherSeverity = when (weather) {
-            Weather.SUNNY -> 0.10
-            Weather.CLOUDY -> 0.22
-            Weather.RAINY -> 0.62
-            Weather.STORM -> 0.85
-        }
-
         currentJob = scope.launch {
             val raceFinished = CompletableDeferred<ClassicRaceOutcome>()
+            var publishedLogCount = 0
             setState(State(isRunning = true))
 
             engine.startRace(
-                trackId = track.getName(),
+                track = track,
                 players = participantNames,
-                tacticId = null,
                 pilotSkillsByName = pilotSkillsByName,
                 carPerformanceByName = carPerformanceByName,
-                trackDifficulty = trackDifficulty,
-                initialWeatherSeverity = weatherSeverity,
                 onFinished = { outcome ->
                     if (!raceFinished.isCompleted) raceFinished.complete(outcome)
                 }
             )
 
             while (isActive && !raceFinished.isCompleted) {
-                publishLogs(eventSink.getEvents())
-                delay(350)
+                publishedLogCount = publishLogs(eventSink.getEvents(), publishedLogCount)
+                delay(700)
             }
 
             val outcome = raceFinished.await()
-            publishLogs(eventSink.getEvents())
+            publishedLogCount = publishLogs(eventSink.getEvents(), publishedLogCount)
 
             GameState.addRaceCommentary(outcome.commentary)
 
@@ -150,10 +133,8 @@ object ClassicRaceSessionStore {
             RaceCalculator.applyPostRaceConsequences(car, playerIncident)
             GameState.addRaceResult(results)
             GameState.processRaceEndUpdates()
-            publishLogs(eventSink.getEvents())
+            publishLogs(eventSink.getEvents(), publishedLogCount)
             setState(State(isRunning = false, logLines = _state.value.logLines, finished = true, hasResult = true))
-            // clear temporary mapping to avoid stale references
-            participantIdToDisplayName = emptyMap()
             running.set(false)
         }
 
@@ -166,15 +147,21 @@ object ClassicRaceSessionStore {
         scope.launch { setState(_state.value.copy(isRunning = false, finished = true)) }
     }
 
-    private suspend fun publishLogs(entries: List<com.bmstu.iu3.automanagement.models.RaceLogEntry>) {
-        val formatted = entries.map { entry ->
+    private suspend fun publishLogs(
+        entries: List<com.bmstu.iu3.automanagement.models.RaceLogEntry>,
+        fromIndex: Int
+    ): Int {
+        if (fromIndex >= entries.size) return fromIndex
+
+        val formatted = entries.drop(fromIndex).map { entry ->
             val seconds = entry.timestampMs / 1000
             val minutes = seconds / 60
             val sec = seconds % 60
             val millis = entry.timestampMs % 1000
             String.format(Locale.US, "[%02d:%02d.%03d] [%s] %s", minutes, sec, millis, entry.source, entry.message)
         }
-        setState(_state.value.copy(logLines = formatted))
+        setState(_state.value.copy(logLines = _state.value.logLines + formatted))
+        return entries.size
     }
 
     private suspend fun setState(newState: State) {

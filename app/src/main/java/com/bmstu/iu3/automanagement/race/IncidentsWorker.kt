@@ -11,8 +11,8 @@ class IncidentsWorker(
     private val tickDelayMs: Long,
     private val eventChannel: SendChannel<RaceDelta>,
     private val pilotSkillByParticipantId: Map<String, Int>,
-    private val trackDifficulty: Double,
-    private val weatherSeverityProvider: () -> Double,
+    private val track: com.bmstu.iu3.automanagement.models.Track,
+    private val isRetired: (String) -> Boolean,
     private val isRaceRunning: () -> Boolean,
     private val random: Random = Random.Default
 ) : RaceWorker {
@@ -26,71 +26,52 @@ class IncidentsWorker(
 
         var tick = 0
         while (active && isRaceRunning() && tick < totalTicks) {
-            delay((tickDelayMs * 2).coerceAtLeast(1L))
-            tick = min(totalTicks, tick + 2)
+            // Редкая проверка инцидентов для реализма
+            delay(tickDelayMs * 8)
+            tick = min(totalTicks, tick + 8)
 
-            val participantId = participantIds[random.nextInt(participantIds.size)]
-            val pilotSkill = pilotSkillByParticipantId[participantId] ?: 50
-            val weatherSeverity = weatherSeverityProvider().coerceIn(0.0, 1.0)
-            val clampedTrackDifficulty = trackDifficulty.coerceIn(0.0, 1.0)
-            val skillRisk = ((100 - pilotSkill).coerceIn(0, 100)) / 100.0
-            val isPro = pilotSkill > 70
-            val isEasyTrack = clampedTrackDifficulty < 0.40
-
-            // 1) Технический инцидент (условно аналог Technical failure)
-            val technicalChance = (
-                0.01 +
-                    weatherSeverity * 0.12 +
-                    clampedTrackDifficulty * 0.08 +
-                    skillRisk * 0.04
-                ).coerceIn(0.01, 0.55)
-
-            // 2) Штраф за скорость (сохраняем вашу старую идею: профи + лёгкая трасса = больше шанс)
-            val speedingChance = when {
-                isPro && isEasyTrack -> 0.40
-                isPro -> 0.15
-                isEasyTrack -> 0.05
-                else -> 0.01
-            }
+            // Выбираем только тех, кто еще в гонке
+            val aliveOnes = participantIds.filter { !isRetired(it) }
+            if (aliveOnes.isEmpty()) break
+            
+            val pId = aliveOnes.random()
+            val skill = pilotSkillByParticipantId[pId] ?: 50
+            val isPro = skill > 75
+            val isEasyTrack = track.getStraightsRatio() > 0.6
 
             val roll = random.nextDouble()
-
-            if (roll < technicalChance) {
-                val terminalChance = (0.30 + weatherSeverity * 0.20).coerceIn(0.10, 0.80)
-                val terminal = random.nextDouble() < terminalChance
-                val technicalPenalty = if (terminal) 100_000.0 else random.nextDouble(4.0, 16.0)
-
-                eventChannel.trySend(
-                    RaceDelta.IncidentPenalty(
-                        participantId = participantId,
-                        tick = tick,
-                        penalty = technicalPenalty,
-                        reason = "Technical failure",
-                        isTerminal = terminal,
-                        fineAmount = 0.0
-                    )
-                )
-                continue
+            
+            // Снижаем риск поломки: базовый 1% + сложность трассы
+            val techRisk = 0.01 + (track.getElevationChange() / 1000.0)
+            
+            // Шанс штрафа (Про-пилот на быстрой трассе превышает)
+            val speedingChance = when {
+                isPro && isEasyTrack -> 0.60 // Высокий шанс для профи
+                isPro -> 0.10
+                else -> 0.03
             }
 
-            if (roll < technicalChance + speedingChance) {
-                val fineAmount = 500.0 + (pilotSkill * 10.0)
-                eventChannel.trySend(
-                    RaceDelta.IncidentPenalty(
-                        participantId = participantId,
-                        tick = tick,
-                        penalty = 0.0,
-                        reason = "Speeding Fine",
-                        isTerminal = false,
-                        fineAmount = fineAmount
-                    )
-                )
+            if (roll < techRisk) {
+                // Только 20% поломок фатальны (DNF)
+                val terminal = random.nextDouble() < 0.20
+                eventChannel.trySend(RaceDelta.IncidentPenalty(
+                    participantId = pId,
+                    tick = tick,
+                    penalty = if (terminal) 1000.0 else 10.0,
+                    reason = if (terminal) "Engine Failure" else "Minor Technical Issue",
+                    isTerminal = terminal
+                ))
+            } else if (roll < techRisk + speedingChance) {
+                eventChannel.trySend(RaceDelta.IncidentPenalty(
+                    participantId = pId,
+                    tick = tick,
+                    penalty = 2.0,
+                    reason = "Speeding Fine",
+                    fineAmount = 500.0 + (skill * 10)
+                ))
             }
         }
     }
 
-    override suspend fun stop() {
-        active = false
-    }
+    override suspend fun stop() { active = false }
 }
-

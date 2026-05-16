@@ -21,24 +21,34 @@ class CarWorker(
 
     override suspend fun start() {
         var progress = 0.0
-        eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "${participant.displayName} started"))
+
+        eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_STARTING"))
 
         for (tick in 1..totalTicks) {
             if (!active || !isRaceRunning()) break
 
             delay(tickDelayMs)
 
-            var gain = participant.basePace + random.nextDouble(0.0, participant.variance)
+            val eventRoll = random.nextDouble()
+            when {
+                eventRoll < 0.05 -> eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_PUSHING"))
+                eventRoll < 0.10 -> eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_DEFENDING"))
+                eventRoll < 0.12 -> eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_LOCKUP"))
+            }
+
+            var gain = participant.basePace + random.nextDouble(-1.0, participant.variance)
             gain *= (1.0 + tacticBoost)
 
             if (tick == totalTicks / 2) {
+                eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_PIT_IN"))
                 val pitStopGranted = pitStopManager.requestPitStop(participant.id)
                 if (pitStopGranted) {
-                    gain *= 1.05
+                    delay(tickDelayMs) // Задержка на обслуживание механиками
+                    gain *= 1.25 // Значительный бонус к скорости на свежей резине
                     pitStopManager.releasePitStop(participant.id)
-                    eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "${participant.displayName} completed pit-stop (+bonus)"))
+                    eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_PIT_OUT_FAST"))
                 } else {
-                    eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "${participant.displayName} pit-stop denied (all boxes busy)"))
+                    eventChannel.trySend(RaceDelta.WorkerMessage(participant.id, "STATUS_PIT_DENIED"))
                 }
             }
 
@@ -65,4 +75,3 @@ class CarWorker(
         active = false
     }
 }
-

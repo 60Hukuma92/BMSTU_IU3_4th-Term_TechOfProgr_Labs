@@ -6,7 +6,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.bmstu.iu3.automanagement.data.GameState
 import com.bmstu.iu3.automanagement.data.GameSaveManager
-import com.bmstu.iu3.automanagement.race.ClassicRaceSessionStore
 import com.bmstu.iu3.automanagement.ui.screens.*
 
 @Composable
@@ -41,26 +40,10 @@ fun SetupNavGraph(
         composable(Screen.StartRace.route) {
             StartRaceScreen(
                 onBack = { navController.popBackStack() },
-                onClassicRaceStart = { navController.navigate(Screen.RaceProgress.route) },
-                saveManager = saveManager,
-                onSurvivalComplete = {
+                onRaceComplete = {
                     navController.navigate(Screen.ViewResults.route) {
                         popUpTo(Screen.MainMenu.route)
                     }
-                }
-            )
-        }
-        composable(Screen.RaceProgress.route) {
-            RaceProgressScreen(
-                saveManager = saveManager,
-                onFinished = {
-                    navController.navigate(Screen.ViewResults.route) {
-                        popUpTo(Screen.MainMenu.route)
-                    }
-                },
-                onBack = {
-                    ClassicRaceSessionStore.stopCurrentRace()
-                    navController.popBackStack()
                 }
             )
         }
@@ -72,12 +55,6 @@ fun SetupNavGraph(
         }
         composable(Screen.Garage.route) {
             AssembleCarScreen {
-                saveManager.saveGame(GameState.getCurrentPlayer())
-                navController.popBackStack()
-            }
-        }
-        composable(Screen.ManageTracks.route) {
-            ManageTracksScreen {
                 saveManager.saveGame(GameState.getCurrentPlayer())
                 navController.popBackStack()
             }
@@ -107,7 +84,9 @@ fun SetupNavGraph(
             ViewTeamsScreen { navController.popBackStack() }
         }
         composable(Screen.ViewResults.route) {
-            ViewResultsScreen { navController.popBackStack() }
+            ViewResultsScreen {
+                navController.popBackStack()
+            }
         }
     }
 }

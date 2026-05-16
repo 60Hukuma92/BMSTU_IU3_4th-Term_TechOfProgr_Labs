@@ -1,5 +1,9 @@
 package com.bmstu.iu3.automanagement.models
 
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+
 sealed class Worker {
     private var name: String = ""
     private var skill: Int = 0 // 1 .. 100
@@ -18,19 +22,28 @@ sealed class Worker {
 class Engineer : Worker()
 
 class Pilot : Worker() {
-    private var fineAmount: Double = 0.0
-    private var fineDeadlineRaces: Int = 0 // Сколько гонок осталось на оплату
-    private var jailSentenceRaces: Int = 0 // Сколько гонок осталось сидеть в тюрьме
+    private var aggression: Int = 0 // 1 .. 100
+    
+    // Speeding and Jail Logic
+    private var fineAmountState = mutableDoubleStateOf(0.0)
+    private var fineDeadlineState = mutableIntStateOf(0) // Races remaining to pay
+    private var isInJailState = mutableStateOf(false)
+    private var jailSentenceState = mutableIntStateOf(0) // Races remaining in jail
 
-    fun getFineAmount(): Double = fineAmount
-    fun setFineAmount(value: Double) { fineAmount = value }
+    fun getAggression(): Int = aggression
+    fun setAggression(value: Int) { aggression = value }
 
-    fun getFineDeadline(): Int = fineDeadlineRaces
-    fun setFineDeadline(value: Int) { fineDeadlineRaces = value }
+    fun getFineAmount(): Double = fineAmountState.doubleValue
+    fun setFineAmount(value: Double) { fineAmountState.doubleValue = value }
 
-    fun getJailSentence(): Int = jailSentenceRaces
-    fun setJailSentence(value: Int) { jailSentenceRaces = value }
+    fun hasFine(): Boolean = fineAmountState.doubleValue > 0
 
-    fun hasFine(): Boolean = fineAmount > 0
-    fun isInJail(): Boolean = jailSentenceRaces > 0
+    fun getFineDeadline(): Int = fineDeadlineState.intValue
+    fun setFineDeadline(value: Int) { fineDeadlineState.intValue = value }
+
+    fun isInJail(): Boolean = isInJailState.value
+    fun setInJail(value: Boolean) { isInJailState.value = value }
+
+    fun getJailSentence(): Int = jailSentenceState.intValue
+    fun setJailSentence(value: Int) { jailSentenceState.intValue = value }
 }
