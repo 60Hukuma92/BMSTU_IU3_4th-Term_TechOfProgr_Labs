@@ -8,6 +8,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.random.Random
 
 class ClassicRaceEngine(
     private val clock: RaceClock,
@@ -23,6 +24,8 @@ class ClassicRaceEngine(
         players: List<String>,
         pilotSkillsByName: Map<String, Int> = emptyMap(),
         carPerformanceByName: Map<String, Double> = emptyMap(),
+        tickDelayMs: Long = 250L,
+        random: Random = Random.Default,
         onCommentary: (CommentatorMessage) -> Unit = {},
         onFinished: (ClassicRaceOutcome) -> Unit = {}
     ) {
@@ -30,9 +33,10 @@ class ClassicRaceEngine(
         running.set(false)
         raceJob = scope.launch {
             val outcome = runRaceInternal(
-                track, players, 250L,
+                track, players, tickDelayMs,
                 pilotSkillsByName, carPerformanceByName,
-                onCommentary
+                onCommentary,
+                random
             )
             withContext(Dispatchers.Main) { onFinished(outcome) }
         }
@@ -44,7 +48,8 @@ class ClassicRaceEngine(
         tickDelayMs: Long,
         pilotSkillsByName: Map<String, Int>,
         carPerformanceByName: Map<String, Double>,
-        onCommentary: (CommentatorMessage) -> Unit
+        onCommentary: (CommentatorMessage) -> Unit,
+        random: Random
     ): ClassicRaceOutcome {
         if (!running.compareAndSet(false, true)) return ClassicRaceOutcome("busy", emptyList())
 
@@ -85,12 +90,13 @@ class ClassicRaceEngine(
                 progressMap[pId] = 0.0
                 launch { 
                     CarWorker(participant, totalTicks, tickDelayMs, deltaChannel, 0.0, pitStopManager, 
-                        isRaceRunning = { running.get() && !retired.contains(pId) }
+                        isRaceRunning = { running.get() && !retired.contains(pId) },
+                        random = random
                     ).start() 
                 }
             }
 
-            launch { WeatherWorker(totalTicks, tickDelayMs, deltaChannel, { running.get() }).start() }
+            launch { WeatherWorker(totalTicks, tickDelayMs, deltaChannel, { running.get() }, random = random).start() }
             launch { 
                 IncidentsWorker(
                     participantIds = participants.keys.toList(),
@@ -100,7 +106,8 @@ class ClassicRaceEngine(
                     pilotSkillByParticipantId = participants.mapValues { pilotSkillsByName[it.value.displayName] ?: 50 },
                     track = track,
                     isRetired = { retired.contains(it) },
-                    isRaceRunning = { running.get() }
+                    isRaceRunning = { running.get() },
+                    random = random
                 ).start() 
             }
 

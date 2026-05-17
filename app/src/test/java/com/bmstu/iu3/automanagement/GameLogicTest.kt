@@ -12,7 +12,7 @@ class GameLogicTest {
     @Before
     fun setup() {
         GameState.setBudget(10000.0)
-        GameState.clearPersonnel()
+        GameState.clearInventory()
         GameState.resetTracksToDefault()
     }
 
