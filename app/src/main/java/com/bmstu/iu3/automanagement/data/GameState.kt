@@ -183,7 +183,10 @@ object GameState {
     fun aiTakePilot(p: Pilot) { marketPilots.remove(p) }
 
     fun payFine(p: Pilot) { if (spendMoney(p.getFineAmount())) { p.setFineAmount(0.0); p.setFineDeadline(0) } }
-    fun releaseFromJail(p: Pilot) { if (spendMoney(p.getSalary() * 0.5)) { p.setInJail(false); jailedPilots.remove(p); hiredPilots.add(p) } }
+    fun releaseFromJail(p: Pilot): Boolean {
+        if (spendMoney(p.getSalary() * 0.5)) { p.setInJail(false); jailedPilots.remove(p); hiredPilots.add(p); return true }
+        else return false
+    }
 
     fun processRaceEndUpdates() {
         val toJail = mutableListOf<Pilot>()
