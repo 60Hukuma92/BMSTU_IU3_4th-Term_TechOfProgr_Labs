@@ -27,8 +27,7 @@ class CommentatorWorker(
             if (flavoredText == null) continue
 
             val commentatorMsg = event.copy(message = flavoredText).toCommentatorMessage()
-            
-            // Ритм трансляции — без долгой задержки, чтобы гонка не подвисала на комментариях
+
             delay(50L)
 
             outputMessages.add(commentatorMsg)

@@ -46,6 +46,23 @@ class GameLogicTest {
     }
 
     @Test
+    fun `tracks exist and can be selected`() {
+        val tracks = GameState.getTracks()
+        assertTrue("Should have default tracks", tracks.isNotEmpty())
+        assertTrue("Should have at least 3 default tracks", tracks.size >= 3)
+    }
+
+    @Test
+    fun `budget is initialized and can be spent`() {
+        val initialBudget = GameState.getBudgetObject().getAmount()
+        assertTrue("Should have initial budget", initialBudget > 0)
+
+        GameState.spendMoney(1000.0)
+        val afterSpend = GameState.getBudgetObject().getAmount()
+        assertTrue("Budget should decrease", afterSpend < initialBudget)
+    }
+
+    @Test
     fun `invalid track should be rejected`() {
         val invalidTrack = Track().apply {
             setName("Bad")

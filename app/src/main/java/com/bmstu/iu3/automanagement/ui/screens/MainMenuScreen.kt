@@ -18,6 +18,7 @@ import com.bmstu.iu3.automanagement.ui.theme.PixelButton
 fun MainMenuScreen(onNavigate: (String) -> Unit, onExit: () -> Unit) {
     val menuItems = listOf(
         Screen.StartRace,
+        Screen.SurvivalRace,
         Screen.BuyComponents,
         Screen.Garage,
         Screen.ManageTracks,

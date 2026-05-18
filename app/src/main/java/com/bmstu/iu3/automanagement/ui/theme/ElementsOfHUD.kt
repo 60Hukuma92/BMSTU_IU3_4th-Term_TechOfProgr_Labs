@@ -57,22 +57,24 @@ fun PixelButton(
     baseColor: Color = MaterialTheme.colorScheme.primary,
     fontSize: TextUnit = 14.sp,
     paddingVertical: Dp = 12.dp,
-    paddingHorizontal: Dp = 16.dp
+    paddingHorizontal: Dp = 16.dp,
+    enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
     var lastClickTime by remember { mutableLongStateOf(0L) }
 
-    val buttonColor = if (isPressed) baseColor.copy(alpha = 0.7f) else baseColor
+    val buttonColor = if (isPressed && enabled) baseColor.copy(alpha = 0.7f) else if (enabled) baseColor else baseColor.copy(alpha = 0.4f)
     val darkShadow = Color.Black.copy(alpha = 0.3f)
-    val offset = if (isPressed) 2.dp else 0.dp
+    val offset = if (isPressed && enabled) 2.dp else 0.dp
 
     Box(
         modifier = modifier
             .clickable(
                 interactionSource = interactionSource, 
-                indication = null, 
+                indication = null,
+                enabled = enabled,
                 onClick = {
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTime > 800L) {

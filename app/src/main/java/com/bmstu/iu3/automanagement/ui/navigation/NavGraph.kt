@@ -47,6 +47,16 @@ fun SetupNavGraph(
                 }
             )
         }
+        composable(Screen.SurvivalRace.route) {
+            SurvivalRaceScreen(
+                onBack = { navController.popBackStack() },
+                onRaceComplete = {
+                    navController.navigate(Screen.ViewResults.route) {
+                        popUpTo(Screen.MainMenu.route)
+                    }
+                }
+            )
+        }
         composable(Screen.BuyComponents.route) {
             BuyComponentsScreen {
                 saveManager.saveGame(GameState.getCurrentPlayer())
