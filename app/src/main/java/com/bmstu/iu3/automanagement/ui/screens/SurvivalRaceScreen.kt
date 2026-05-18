@@ -41,18 +41,23 @@ fun SurvivalRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
     var isRacing by remember { mutableStateOf(false) }
     var raceCompleted by remember { mutableStateOf(false) }
     var engine by remember { mutableStateOf<SurvivalRaceEngine?>(null) }
+    var selectedTargetIndex by remember { mutableStateOf<Int?>(null) }
     val turnLogs = remember { mutableStateListOf<String>() }
     val standings = remember { mutableStateListOf<String>() }
     val listState = rememberLazyListState()
     val gameMessages = remember { mutableStateListOf<String>() }
 
     if (isRacing && selectedTrack != null && selectedCar != null && selectedPilot != null && engine == null) {
+        val budgetFactorCount = (GameState.getBudgetObject().getAmount() / 50000).toInt().coerceAtMost(3)
+        val desiredOpponents = maxOf(4, 2 + budgetFactorCount) // ensure at least 4 opponents for interesting survival
+        val opponentsToUse = opponents.take(desiredOpponents.coerceAtMost(opponents.size))
+
         engine = SurvivalRaceEngine(
             track = selectedTrack!!,
             weather = Weather.SUNNY,
             playerCar = selectedCar!!,
             playerPilot = selectedPilot!!,
-            opponents = opponents.take(2 + (GameState.getBudgetObject().getAmount() / 50000).toInt().coerceAtMost(3)),
+            opponents = opponentsToUse,
             random = DefaultSurvivalRandom()
         )
         gameMessages.add("Starting survival race on ${selectedTrack?.getName()}...")
@@ -76,12 +81,28 @@ fun SurvivalRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
             ) {
                 Text("STANDINGS (TURN ${engine!!.turnNumber}):", color = Color.Yellow, fontSize = 9.sp, fontFamily = pixelFont)
                 engine!!.getStandings().forEachIndexed { index, competitor ->
-                    Text(
-                        "${index + 1}. ${competitor.name} - ${String.format("%.1f", competitor.progress)}m",
-                        color = if (competitor.isPlayer) Color.Green else Color.White,
-                        fontSize = 8.sp,
-                        fontFamily = pixelFont
-                    )
+                    val isSelected = selectedTargetIndex == index
+                    Row(modifier = Modifier.fillMaxWidth().clickable {
+                        // allow selecting an opponent (can't select yourself)
+                        if (!competitor.isPlayer && competitor.alive) {
+                            selectedTargetIndex = index
+                        }
+                    }.padding(vertical = 2.dp)) {
+                        Text(
+                            text = "${index + 1}. ${competitor.name} - ${String.format("%.1f", competitor.progress)}m",
+                            color = when {
+                                competitor.isPlayer -> Color.Green
+                                isSelected -> Color.Cyan
+                                else -> Color.White
+                            },
+                            fontSize = 8.sp,
+                            fontFamily = pixelFont,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (!competitor.isPlayer) {
+                            Text(if (competitor.alive) "Alive" else "Dead", color = Color.Gray, fontSize = 8.sp)
+                        }
+                    }
                 }
                 if (!engine!!.getPlayerState().alive) {
                     Text("YOU ARE ELIMINATED!", color = Color.Red, fontSize = 9.sp, fontFamily = pixelFont)
@@ -120,19 +141,15 @@ fun SurvivalRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                         PixelButton(
                             text = "ATTACK",
                             onClick = {
-                                val standings = engine!!.getStandings()
-                                var targetIndex = -1
-                                for (i in standings.indices) {
-                                    if (engine!!.canPlayerAttack(i)) {
-                                        targetIndex = i
-                                        break
-                                    }
-                                }
-                                if (targetIndex >= 0) {
-                                    val result = engine!!.performPlayerAttack(targetIndex)
-                                    gameMessages.addAll(result.logs)
-                                    raceCompleted = result.finished
-                                }
+                                        val standings = engine!!.getStandings()
+                                                val targetIndex = selectedTargetIndex ?: standings.indexOfFirst { engine!!.canPlayerAttack(standings.indexOf(it)) && !it.isPlayer }
+                                                if (targetIndex >= 0 && targetIndex < standings.size) {
+                                                    val result = engine!!.performPlayerAttack(targetIndex)
+                                                    gameMessages.addAll(result.logs)
+                                                    raceCompleted = result.finished
+                                                } else {
+                                                    gameMessages.add("No valid target to attack.")
+                                                }
                             },
                             modifier = Modifier.weight(1f),
                             baseColor = if (canAttack && engine!!.getPlayerState().alive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -154,10 +171,13 @@ fun SurvivalRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                             text = "EVIDENCE",
                             onClick = {
                                 val standings = engine!!.getStandings()
-                                if (standings.size > 1) {
-                                    val result = engine!!.performPlayerCompromisingEvidence(0, 10)
+                                val idx = selectedTargetIndex ?: -1
+                                if (idx >= 0 && idx < standings.size) {
+                                    val result = engine!!.performPlayerCompromisingEvidence(idx, 10)
                                     gameMessages.addAll(result.logs)
                                     raceCompleted = result.finished
+                                } else {
+                                    gameMessages.add("Select a target to use compromising evidence.")
                                 }
                             },
                             modifier = Modifier.weight(1f),

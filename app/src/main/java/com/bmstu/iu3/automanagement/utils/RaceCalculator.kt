@@ -4,6 +4,19 @@ import com.bmstu.iu3.automanagement.models.*
 import kotlin.random.Random
 
 object RaceCalculator {
+    // injectable random supplier for deterministic testing
+    private var randomSupplier: () -> Double = { kotlin.random.Random.nextDouble() }
+
+    fun setRandomSupplier(supplier: () -> Double) {
+        randomSupplier = supplier
+    }
+
+    fun resetRandomSupplier() {
+        randomSupplier = { kotlin.random.Random.nextDouble() }
+    }
+
+    private fun randomDouble(): Double = randomSupplier()
+    private fun randomIn(min: Double, max: Double): Double = min + (max - min) * randomSupplier()
 
     fun calculateRaceTime(car: Car, pilot: Pilot, track: Track, weather: Weather): Double {
         var time = track.getLength() * 100.0
@@ -18,7 +31,7 @@ object RaceCalculator {
         val weatherImpact = 1.0 / weather.gripMultiplier
         val weatherMitigation = (pilot.getSkill() / 100.0) * 0.5
         time *= (1.0 + (weatherImpact - 1.0) * (1.0 - weatherMitigation))
-        return time * Random.nextDouble(0.98, 1.02)
+        return time * randomIn(0.98, 1.02)
     }
 
     fun checkIncident(car: Car, pilot: Pilot, track: Track, weather: Weather): Incident? {
@@ -30,10 +43,10 @@ object RaceCalculator {
         if (weather == Weather.RAINY) techRisk += 0.03
         if (weather == Weather.STORM) techRisk += 0.10
 
-        if (Random.nextDouble() < techRisk) {
+        if (randomDouble() < techRisk) {
             return Incident().apply {
                 setReason("Technical failure")
-                setSeverity(if (Random.nextDouble() < 0.3) "Terminal" else "Minor")
+                setSeverity(if (randomDouble() < 0.3) "Terminal" else "Minor")
             }
         }
 
@@ -49,7 +62,7 @@ object RaceCalculator {
             else -> 0.01
         }
 
-        if (Random.nextDouble() < speedingChance) {
+        if (randomDouble() < speedingChance) {
             return Incident().apply {
                 setReason("Speeding Fine")
                 setSeverity("Fine")
@@ -64,7 +77,7 @@ object RaceCalculator {
         val components = listOf(car.getEngine(), car.getGearbox(), car.getChassis(), 
                                car.getSuspension(), car.getAerodynamics(), car.getTyres())
 
-        components.forEach { it?.let { it.setWear((it.getWear() + Random.nextDouble(0.05, 0.15)).coerceAtMost(1.0)) } }
+        components.forEach { it?.let { it.setWear((it.getWear() + randomIn(0.05, 0.15)).coerceAtMost(1.0)) } }
 
         if (incident != null && incident.getReason() == "Technical failure") {
             val brokenCount = if (incident.getSeverity() == "Terminal") 2 else 1

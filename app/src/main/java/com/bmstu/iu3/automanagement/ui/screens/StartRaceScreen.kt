@@ -224,15 +224,48 @@ fun StartRaceScreen(onBack: () -> Unit, onRaceComplete: () -> Unit) {
                                                 baseSeconds * (leaderProgress / standing.finalProgress)
                                             }
 
+                                            val prizePool = 50000.0
+                                            val prizeMoney = when (standing.position) {
+                                                1 -> prizePool * 0.5
+                                                2 -> prizePool * 0.3
+                                                3 -> prizePool * 0.2
+                                                else -> 0.0
+                                            }
+
                                             RaceResult().apply {
                                                 setTeamName(teamName)
                                                 setPosition(standing.position)
                                                 setTime(resultTime)
                                                 setIncident(standing.incident)
+                                                setPrizeMoney(prizeMoney)
                                             }
                                         })
 
-                                        // Обработка штрафов
+                                        val playerResult = standings.find { it.displayName == "YOU" }
+                                        if (playerResult != null) {
+                                            val prizePool = 50000.0
+                                            val playerPrize = when (playerResult.position) {
+                                                1 -> prizePool * 0.5
+                                                2 -> prizePool * 0.3
+                                                3 -> prizePool * 0.2
+                                                else -> 0.0
+                                            }
+                                            if (playerPrize > 0) {
+                                                GameState.addMoney(playerPrize)
+                                            }
+
+                                            // Обработка инцидента с применением последствий
+                                            if (playerResult.incident != null) {
+                                                val incident = playerResult.incident!!
+                                                val fineAmount = incident.getFineAmount()
+                                                if (fineAmount > 0) {
+                                                    selectedPilot!!.setFineAmount(fineAmount)
+                                                    selectedPilot!!.setFineDeadline(3)
+                                                }
+                                            }
+                                        }
+
+                                        // Обработка штрафов от гоночного движка (если есть)
                                         if (outcome.pilotFines.containsKey("YOU")) {
                                             selectedPilot!!.setFineAmount(outcome.pilotFines["YOU"]!!)
                                             selectedPilot!!.setFineDeadline(3)

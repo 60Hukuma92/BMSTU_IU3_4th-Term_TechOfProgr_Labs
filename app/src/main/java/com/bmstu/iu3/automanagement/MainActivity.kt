@@ -32,7 +32,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val mainViewModel: MainViewModel = viewModel()
-            val budgetText = mainViewModel.getBudgetDisplay()
+            val budgetText by mainViewModel.budgetDisplay
+            val playerName by mainViewModel.playerName
             val saveManager = GameSaveManager(this@MainActivity)
 
             var showDevMenu by remember { mutableStateOf(false) }
@@ -50,9 +51,9 @@ class MainActivity : ComponentActivity() {
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    if (currentRoute != Screen.PlayerSelection.route && GameState.getCurrentPlayer().isNotEmpty()) {
+                                    if (currentRoute != Screen.PlayerSelection.route && playerName.isNotEmpty()) {
                                         Text(
-                                            "Player: ${GameState.getCurrentPlayer()}",
+                                            "Player: $playerName",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.primary,
                                             fontFamily = FontFamily(Font(press_start2p))

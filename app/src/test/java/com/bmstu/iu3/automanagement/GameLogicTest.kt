@@ -87,11 +87,20 @@ class GameLogicTest {
         var rookieEasyFines = 0
         var proHardFines = 0
 
-        repeat(1000) {
+        // Use deterministic supplier to generate predictable "random" values for the test
+        val seq = DoubleArray(200) { i -> (i % 100) / 100.0 } // 0.0,0.01,...,0.99 repeating
+        var idx = 0
+        val supplier = { seq[idx++ % seq.size] }
+        RaceCalculator.setRandomSupplier(supplier)
+
+        // iterate through prepared values instead of relying on true randomness
+        seq.forEach {
             if (RaceCalculator.checkIncident(car, proPilot, easyTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") proEasyFines++
             if (RaceCalculator.checkIncident(car, rookiePilot, easyTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") rookieEasyFines++
             if (RaceCalculator.checkIncident(car, proPilot, hardTrack, Weather.SUNNY)?.getReason() == "Speeding Fine") proHardFines++
         }
+
+        RaceCalculator.resetRandomSupplier()
 
         assertTrue("Pro on easy track should have more fines than rookie ($proEasyFines vs $rookieEasyFines)", proEasyFines > rookieEasyFines)
         assertTrue("Pro on easy track should have more fines than pro on hard track ($proEasyFines vs $proHardFines)", proEasyFines > proHardFines)
@@ -211,10 +220,18 @@ class GameLogicTest {
 
         var incidentsBroken = 0
         var incidentsGood = 0
-        repeat(100) {
+
+        val seq2 = DoubleArray(100) { i -> (i.toDouble() / 100.0) }
+        var idx2 = 0
+        val supplier2 = { seq2[idx2++ % seq2.size] }
+        RaceCalculator.setRandomSupplier(supplier2)
+
+        seq2.forEach {
             if (RaceCalculator.checkIncident(brokenCar, pilot, track, Weather.SUNNY) != null) incidentsBroken++
             if (RaceCalculator.checkIncident(goodCar, pilot, track, Weather.SUNNY) != null) incidentsGood++
         }
+
+        RaceCalculator.resetRandomSupplier()
 
         assertTrue(incidentsBroken > incidentsGood)
     }

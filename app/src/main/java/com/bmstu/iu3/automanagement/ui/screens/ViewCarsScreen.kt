@@ -130,8 +130,8 @@ private fun ComponentOnCarRow(car: Car, component: Component) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(component.getName(), style = MaterialTheme.typography.bodySmall)
-                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall)
+                Text(component.getName(), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily(Font(press_start2p)))
+                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily(Font(press_start2p)))
             }
             PixelButton(
                 text = "REMOVE",
@@ -147,8 +147,8 @@ private fun InventoryInstallRow(car: Car, component: Component) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(component.getName(), style = MaterialTheme.typography.bodySmall)
-                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall)
+                Text(component.getName(), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily(Font(press_start2p)))
+                Text(buildComponentStatsText(component), style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily(Font(press_start2p)))
             }
             PixelButton(
                 text = "INSTALL",

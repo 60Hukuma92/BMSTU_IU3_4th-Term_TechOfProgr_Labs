@@ -9,7 +9,7 @@ import com.bmstu.iu3.automanagement.utils.OpponentGenerator
 
 object GameState {
     private val budget: MutableState<Budget> = mutableStateOf(Budget())
-    private var currentPlayer: String = "Player 1"
+    private val currentPlayer = mutableStateOf("Player 1")
 
     private val ownedComponents = mutableStateListOf<Component>()
     private val assembledCars = mutableStateListOf<Car>()
@@ -35,8 +35,9 @@ object GameState {
         resetTracksToDefault()
     }
 
-    fun getCurrentPlayer(): String = currentPlayer
-    fun setCurrentPlayer(name: String) { currentPlayer = name }
+    fun getCurrentPlayer(): String = currentPlayer.value
+    fun setCurrentPlayer(name: String) { currentPlayer.value = name }
+    fun getCurrentPlayerState(): androidx.compose.runtime.State<String> = currentPlayer
 
     fun getBudgetObject() : Budget = budget.value
     fun getHiredPilots(): List<Pilot> = hiredPilots
@@ -96,19 +97,18 @@ object GameState {
     }
 
     fun setBudget(v: Double) { 
-        budget.value.setAmount(v)
-        budget.value = budget.value 
+        budget.value = Budget().apply { setAmount(v) }
     }
     
     fun addMoney(v: Double) { 
-        budget.value.setAmount(budget.value.getAmount() + v)
-        budget.value = budget.value
+        val currentAmount = budget.value.getAmount()
+        budget.value = Budget().apply { setAmount(currentAmount + v) }
     }
 
     fun spendMoney(v: Double): Boolean {
         if (budget.value.getAmount() >= v) {
-            budget.value.setAmount(budget.value.getAmount() - v)
-            budget.value = budget.value
+            val newAmount = budget.value.getAmount() - v
+            budget.value = Budget().apply { setAmount(newAmount) }
             return true
         }
         return false
@@ -155,6 +155,25 @@ object GameState {
             is Suspension -> { car.getSuspension()?.let { ownedComponents.add(it) }; car.setSuspension(component); true }
             is Aerodynamics -> { car.getAerodynamics()?.let { ownedComponents.add(it) }; car.setAerodynamics(component); true }
             is Tyres -> { car.getTyres()?.let { ownedComponents.add(it) }; car.setTyres(component); true }
+            is MeleeWeapon -> {
+                // try to put into first free melee slot, if occupied move existing back to inventory
+                if (car.getMeleeWeapon1() == null) {
+                    car.setMeleeWeapon1(component)
+                } else if (car.getMeleeWeapon2() == null) {
+                    car.setMeleeWeapon2(component)
+                } else {
+                    // replace first slot by default
+                    car.getMeleeWeapon1()?.let { ownedComponents.add(it) }
+                    car.setMeleeWeapon1(component)
+                }
+                true
+            }
+            is RangedWeapon -> {
+                // place into ranged slot, if occupied move existing back to inventory
+                car.getRangedWeapon()?.let { ownedComponents.add(it) }
+                car.setRangedWeapon(component)
+                true
+            }
             else -> false
         }
         if (success) { ownedComponents.remove(component) }
@@ -169,6 +188,12 @@ object GameState {
             is Suspension -> if (car.getSuspension() == component) { car.setSuspension(null); true } else false
             is Aerodynamics -> if (car.getAerodynamics() == component) { car.setAerodynamics(null); true } else false
             is Tyres -> if (car.getTyres() == component) { car.setTyres(null); true } else false
+            is MeleeWeapon -> when {
+                car.getMeleeWeapon1() == component -> { car.setMeleeWeapon1(null); true }
+                car.getMeleeWeapon2() == component -> { car.setMeleeWeapon2(null); true }
+                else -> false
+            }
+            is RangedWeapon -> if (car.getRangedWeapon() == component) { car.setRangedWeapon(null); true } else false
             else -> false
         }
         if (success) { ownedComponents.add(component) }

@@ -88,7 +88,18 @@ class SurvivalRaceEngine(
             }
         }
 
-        competitors.sortByDescending { baseCompetitorStrength(it) }
+        // Give opponents a small randomized starting progress so positions are not always identical
+        competitors.filter { !it.isPlayer }.forEach { opp ->
+            // up to ~30 meters random headstart
+            try {
+                val jitter = random.nextDouble() * 30.0
+                opp.progress = jitter
+            } catch (e: Exception) {
+                opp.progress = 0.0
+            }
+        }
+
+        competitors.sortByDescending { it.progress }
         turnLogs.add("Survival race started on ${track.getName()} (${String.format(Locale.US, "%.1f", finishDistance)} m)")
     }
 
