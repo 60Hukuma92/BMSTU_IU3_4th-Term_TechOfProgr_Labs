@@ -73,12 +73,24 @@ object GameState {
     }
 
     fun addTrack(t: Track): Boolean {
+        // Basic validation: ratios must be between 0 and 1 and sum <= 1, length positive
+        if (t.getLength() <= 0.0) return false
+        val straights = t.getStraightsRatio()
+        val corners = t.getCornersRatio()
+        if (straights < 0.0 || corners < 0.0 || straights > 1.0 || corners > 1.0) return false
+        if (straights + corners > 1.0 + 1e-6) return false
         tracks.add(t)
         return true
     }
 
     fun updateTrack(index: Int, t: Track): Boolean {
         if (index !in tracks.indices) return false
+        // Validate same as addTrack
+        if (t.getLength() <= 0.0) return false
+        val straights = t.getStraightsRatio()
+        val corners = t.getCornersRatio()
+        if (straights < 0.0 || corners < 0.0 || straights > 1.0 || corners > 1.0) return false
+        if (straights + corners > 1.0 + 1e-6) return false
         tracks[index] = t
         return true
     }
@@ -214,6 +226,18 @@ object GameState {
     }
 
     fun processRaceEndUpdates() {
+        // First, decrement sentences for pilots already in jail (do not touch pilots just sent to jail this turn)
+        val alreadyJailed = jailedPilots.toList()
+        alreadyJailed.forEach { p ->
+            p.setJailSentence(p.getJailSentence() - 1)
+            if (p.getJailSentence() <= 0) {
+                p.setInJail(false)
+                jailedPilots.remove(p)
+                hiredPilots.add(p)
+            }
+        }
+
+        // Then process fines for hired pilots and send to jail if deadline expired
         val toJail = mutableListOf<Pilot>()
         hiredPilots.toList().forEach { p ->
             if (p.hasFine()) {
@@ -223,14 +247,9 @@ object GameState {
         }
         toJail.forEach { p ->
             hiredPilots.remove(p)
-            p.setInJail(true); p.setJailSentence(3)
+            p.setInJail(true)
+            p.setJailSentence(3)
             jailedPilots.add(p)
-        }
-        jailedPilots.toList().forEach { p ->
-            p.setJailSentence(p.getJailSentence() - 1)
-            if (p.getJailSentence() <= 0) {
-                p.setInJail(false); jailedPilots.remove(p); hiredPilots.add(p)
-            }
         }
     }
     
